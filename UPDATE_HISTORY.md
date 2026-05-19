@@ -61,6 +61,14 @@ commit message를 **`UPDATE_HISTORY`**로 작성해 주세요.
 ### **Pak Denis**
 
 **Task:**
+- 플레이어 첫 발사 프로토타입 추가 (4f048116e1085be617d769e6d37e7acb9e8a130b)
+
+**Details:**  
+플레이어의 기본 발사 시스템을 추가했습니다.  
+현재 총알은 하나의 active 상태로 관리되며, 화면에 존재하는 동안에는 새로운 총알이 생성되지 않습니다.  
+총알은 위쪽으로 이동하고 화면 밖으로 나가면 비활성화되도록 구현했습니다.
+
+**Task:**
 - Galaga Visual Studio 프로젝트 파일 추가 (f804a483687ede8eb824a980852392e54e17d63f)
 
 **Details:**  
