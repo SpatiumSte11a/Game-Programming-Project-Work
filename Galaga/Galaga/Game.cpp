@@ -7,7 +7,11 @@ Game::Game()
     FrameCounter(0),
     PlayerX(0.0f),
     PlayerY(-0.80f),
-    PlayerSpeed(0.9f)
+    PlayerSpeed(0.9f),
+    IsBulletActive(false),
+    BulletX(0.0f),
+    BulletY(0.0f),
+    BulletSpeed(1.5f)
 {
     PrevTime = std::chrono::high_resolution_clock::now();
 }
@@ -74,6 +78,13 @@ void Game::Input()
         IsRunning = false;
         DestroyWindow(Window.hWnd);
     }
+
+    if ((GetAsyncKeyState(VK_SPACE) & 0x0001) && !IsBulletActive)
+    {
+        IsBulletActive = true;
+        BulletX = PlayerX;
+        BulletY = PlayerY + 0.08f;
+    }
 }
 
 void Game::Update(float dt)
@@ -89,11 +100,28 @@ void Game::Update(float dt)
 
     if (PlayerX > 0.9f)
         PlayerX = 0.9f;
+
+    if (IsBulletActive)
+    {
+        BulletY += BulletSpeed * dt;
+
+        if (BulletY > 1.1f)
+            IsBulletActive = false;
+    }
 }
 
 void Game::Render()
 {
     Graphics.BeginFrame();
-    Graphics.DrawTriangle(PlayerX, PlayerY);
+
+    // player
+    Graphics.DrawTriangle(PlayerX, PlayerY, 1.0f, 1.0f);
+
+    // bullet
+    if (IsBulletActive)
+    {
+        Graphics.DrawTriangle(BulletX, BulletY, 0.18f, 0.35f);
+    }
+
     Graphics.EndFrame();
 }

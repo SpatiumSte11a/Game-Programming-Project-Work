@@ -104,7 +104,8 @@ cbuffer ConstantBuffer : register(b0)
 {
     float offsetX;
     float offsetY;
-    float2 padding;
+    float scaleX;
+    float scaleY;
 };
 
 struct VS_INPUT
@@ -122,9 +123,13 @@ struct PS_INPUT
 PS_INPUT VSMain(VS_INPUT input)
 {
     PS_INPUT output;
+
     float3 finalPos = input.pos;
+    finalPos.x *= scaleX;
+    finalPos.y *= scaleY;
     finalPos.x += offsetX;
     finalPos.y += offsetY;
+
     output.pos = float4(finalPos, 1.0f);
     output.col = input.col;
     return output;
@@ -289,11 +294,13 @@ void GraphicsContext::BeginFrame()
     Context->RSSetViewports(1, &vp);
 }
 
-void GraphicsContext::DrawTriangle(float offsetX, float offsetY)
+void GraphicsContext::DrawTriangle(float offsetX, float offsetY, float scaleX, float scaleY)
 {
     ConstantBuffer cb = {};
     cb.offsetX = offsetX;
     cb.offsetY = offsetY;
+    cb.scaleX = scaleX;
+    cb.scaleY = scaleY;
 
     Context->UpdateSubresource(ConstantBufferGPU, 0, nullptr, &cb, 0, 0);
 

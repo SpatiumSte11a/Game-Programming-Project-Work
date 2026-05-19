@@ -21,6 +21,11 @@ private:
     float PlayerY;
     float PlayerSpeed;
 
+    bool IsBulletActive;
+    float BulletX;
+    float BulletY;
+    float BulletSpeed;
+
 public:
     Game();
 

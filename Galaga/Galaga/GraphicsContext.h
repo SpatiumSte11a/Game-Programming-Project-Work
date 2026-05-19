@@ -18,7 +18,8 @@ struct ConstantBuffer
 {
     float offsetX;
     float offsetY;
-    float padding[2];
+    float scaleX;
+    float scaleY;
 };
 
 class GraphicsContext
@@ -42,7 +43,7 @@ public:
     bool Initialize(HWND hWnd, int width, int height);
 
     void BeginFrame();
-    void DrawTriangle(float offsetX, float offsetY);
+    void DrawTriangle(float offsetX, float offsetY, float scaleX, float scaleY);
     void EndFrame();
 
 private:
