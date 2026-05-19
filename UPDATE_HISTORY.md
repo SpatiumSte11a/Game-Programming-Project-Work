@@ -61,6 +61,13 @@ commit message를 **`UPDATE_HISTORY`**로 작성해 주세요.
 ### **Pak Denis**
 
 **Task:**
+- Galaga Visual Studio 프로젝트 파일 추가 (f804a483687ede8eb824a980852392e54e17d63f)
+
+**Details:**  
+Galaga 프로젝트를 위한 Visual Studio 작업 환경을 구성하고 기본 프로젝트 파일을 추가했습니다.  
+이제 solution이 정상적으로 열리며, Visual Studio에서 프로젝트 구조를 확인하고 이후 개발을 계속 진행할 수 있는 상태가 되었습니다.
+
+**Task:**
 - Visual Studio용 .gitignore 파일 추가 (dc491e9040992d3c6a77ff0e73c64012a00cd964)
 
 **Details:**  
