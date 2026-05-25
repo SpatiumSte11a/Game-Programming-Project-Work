@@ -57,7 +57,29 @@ commit message를 **`UPDATE_HISTORY`**로 작성해 주세요.
 # Updates
 
 ---
+## 2026-05-26
 
+### **Pak Denis**
+
+**Task:**
+- DEV_LOG 내용 보완 및 현재 작업 방향 정리 (`90741e5`)
+
+**Details:**  
+`DEV_LOG.md` 내용을 보완하고, 현재 단계에서 무엇을 중심으로 작업했는지 더 자연스럽고 명확하게 정리했습니다.  
+특히 Player / Bullet / Enemy 구조 분리, 발사 시스템에 대한 고민, 적 배치와 렌더링, 그리고 collision 이전 단계까지의 흐름이 잘 드러나도록 내용을 정리했습니다.
+
+### **Pak Denis**
+
+**Task:**
+- Player/Bullet/Enemy 구조 분리 및 적/발사 프로토타입 구현 (`3976697`)
+
+**Details:**  
+기존에 Game 안에 있던 플레이어와 총알 관련 로직을 정리하고, Player, Bullet, Enemy 구조를 분리했습니다.  
+Player 클래스를 새로 만들고, Bullet 클래스를 기반으로 player bullet system과 enemy bullet system을 추가했습니다.  
+또한 Enemy 클래스를 생성하고 3가지 적 타입을 테스트 형태로 배치했으며, square / down triangle / diamond 형태로 렌더링할 수 있도록 GraphicsContext를 확장했습니다.  
+마지막으로 Type2 적이 아래 방향으로 발사하는 프로토타입까지 연결하여, 적과 발사 구조의 기본 동작을 확인할 수 있는 단계까지 구현했습니다.
+
+---
 ## 2026-05-19
 ### **Pak Denis**
 
