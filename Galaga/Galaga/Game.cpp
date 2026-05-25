@@ -4,14 +4,7 @@ Game::Game()
     : Window(L"Galaga"),
     IsRunning(true),
     TitleUpdateTimer(0.0f),
-    FrameCounter(0),
-    PlayerX(0.0f),
-    PlayerY(-0.80f),
-    PlayerSpeed(0.9f),
-    IsBulletActive(false),
-    BulletX(0.0f),
-    BulletY(0.0f),
-    BulletSpeed(1.5f)
+    FrameCounter(0)
 {
     PrevTime = std::chrono::high_resolution_clock::now();
 }
@@ -23,6 +16,29 @@ bool Game::Initialize(HINSTANCE hInstance)
 
     if (!Graphics.Initialize(Window.hWnd, 720, 960))
         return false;
+
+    float enemyX = 0.0f;
+    float visualGap = 0.04f;
+
+    float squareY = 0.42f;
+    float squareTop = 0.05f;
+
+    float downTriangleTop = 0.02f;
+    float downTriangleBottom = 0.08f;
+
+    float diamondBottom = 0.063f;
+
+    float triangleY = squareY + squareTop + visualGap + downTriangleBottom;
+    float diamondY = triangleY + downTriangleTop + visualGap + diamondBottom;
+
+    Enemies[0].SetType(EnemyType::Type1);
+    Enemies[0].SetPosition(enemyX, squareY);
+
+    Enemies[1].SetType(EnemyType::Type2);
+    Enemies[1].SetPosition(enemyX, triangleY);
+
+    Enemies[2].SetType(EnemyType::Type3);
+    Enemies[2].SetPosition(enemyX, diamondY);
 
     return true;
 }
@@ -78,50 +94,65 @@ void Game::Input()
         IsRunning = false;
         DestroyWindow(Window.hWnd);
     }
-
-    if ((GetAsyncKeyState(VK_SPACE) & 0x0001) && !IsBulletActive)
-    {
-        IsBulletActive = true;
-        BulletX = PlayerX;
-        BulletY = PlayerY + 0.08f;
-    }
 }
 
 void Game::Update(float dt)
 {
-    if ((GetAsyncKeyState(VK_LEFT) & 0x8000) || (GetAsyncKeyState('A') & 0x8000))
-        PlayerX -= PlayerSpeed * dt;
+    bool moveLeft = (GetAsyncKeyState(VK_LEFT) & 0x8000) || (GetAsyncKeyState('A') & 0x8000);
+    bool moveRight = (GetAsyncKeyState(VK_RIGHT) & 0x8000) || (GetAsyncKeyState('D') & 0x8000);
+    bool shootPressed = (GetAsyncKeyState(VK_SPACE) & 0x8000);
 
-    if ((GetAsyncKeyState(VK_RIGHT) & 0x8000) || (GetAsyncKeyState('D') & 0x8000))
-        PlayerX += PlayerSpeed * dt;
+    PlayerObject.Update(dt, moveLeft, moveRight);
+    PlayerBulletSystemObject.Update(dt, shootPressed, PlayerObject.GetX(), PlayerObject.GetY());
 
-    if (PlayerX < -0.9f)
-        PlayerX = -0.9f;
+    bool type2CanShoot = false;
+    float type2X = 0.0f;
+    float type2Y = 0.0f;
 
-    if (PlayerX > 0.9f)
-        PlayerX = 0.9f;
-
-    if (IsBulletActive)
+    for (int i = 0; i < EnemyCount; i++)
     {
-        BulletY += BulletSpeed * dt;
+        Enemies[i].Update(dt);
 
-        if (BulletY > 1.1f)
-            IsBulletActive = false;
+        if (Enemies[i].GetIsAlive() && Enemies[i].GetType() == EnemyType::Type2)
+        {
+            type2CanShoot = true;
+            type2X = Enemies[i].GetX();
+            type2Y = Enemies[i].GetY();
+        }
     }
+
+    EnemyBulletSystemObject.Update(dt, type2CanShoot, type2X, type2Y);
 }
 
 void Game::Render()
 {
     Graphics.BeginFrame();
 
-    // player
-    Graphics.DrawTriangle(PlayerX, PlayerY, 1.0f, 1.0f);
+    Graphics.DrawTriangle(PlayerObject.GetX(), PlayerObject.GetY(), 1.0f, 1.0f);
+    PlayerBulletSystemObject.Render(Graphics);
 
-    // bullet
-    if (IsBulletActive)
+    for (int i = 0; i < EnemyCount; i++)
     {
-        Graphics.DrawTriangle(BulletX, BulletY, 0.18f, 0.35f);
+        if (!Enemies[i].GetIsAlive())
+            continue;
+
+        switch (Enemies[i].GetType())
+        {
+        case EnemyType::Type1:
+            Graphics.DrawQuad(Enemies[i].GetX(), Enemies[i].GetY(), 1.0f, 1.0f);
+            break;
+
+        case EnemyType::Type2:
+            Graphics.DrawDownTriangle(Enemies[i].GetX(), Enemies[i].GetY(), 1.0f, 1.0f);
+            break;
+
+        case EnemyType::Type3:
+            Graphics.DrawDiamond(Enemies[i].GetX(), Enemies[i].GetY(), 0.9f, 0.9f);
+            break;
+        }
     }
+
+    EnemyBulletSystemObject.Render(Graphics);
 
     Graphics.EndFrame();
 }

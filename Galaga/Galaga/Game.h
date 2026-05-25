@@ -4,6 +4,9 @@
 #include <string>
 #include "WindowContext.h"
 #include "GraphicsContext.h"
+#include "Player.h"
+#include "Bullet.h"
+#include "Enemy.h"
 
 class Game
 {
@@ -17,14 +20,12 @@ private:
     float TitleUpdateTimer;
     int FrameCounter;
 
-    float PlayerX;
-    float PlayerY;
-    float PlayerSpeed;
+    Player PlayerObject;
+    PlayerBulletSystem PlayerBulletSystemObject;
+    EnemyBulletSystem EnemyBulletSystemObject;
 
-    bool IsBulletActive;
-    float BulletX;
-    float BulletY;
-    float BulletSpeed;
+    static const int EnemyCount = 3;
+    Enemy Enemies[EnemyCount];
 
 public:
     Game();

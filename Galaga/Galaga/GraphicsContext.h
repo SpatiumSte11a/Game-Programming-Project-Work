@@ -33,7 +33,11 @@ private:
     ID3D11VertexShader* VertexShader;
     ID3D11PixelShader* PixelShader;
     ID3D11InputLayout* InputLayout;
-    ID3D11Buffer* VertexBuffer;
+
+    ID3D11Buffer* TriangleVertexBuffer;
+    ID3D11Buffer* DownTriangleVertexBuffer;
+    ID3D11Buffer* QuadVertexBuffer;
+    ID3D11Buffer* DiamondVertexBuffer;
     ID3D11Buffer* ConstantBufferGPU;
 
 public:
@@ -44,11 +48,17 @@ public:
 
     void BeginFrame();
     void DrawTriangle(float offsetX, float offsetY, float scaleX, float scaleY);
+    void DrawDownTriangle(float offsetX, float offsetY, float scaleX, float scaleY);
+    void DrawQuad(float offsetX, float offsetY, float scaleX, float scaleY);
+    void DrawDiamond(float offsetX, float offsetY, float scaleX, float scaleY);
     void EndFrame();
 
 private:
     bool CreateRenderTarget();
     bool CreateShaders();
     bool CreateTriangle();
+    bool CreateDownTriangle();
+    bool CreateQuad();
+    bool CreateDiamond();
     void ReleaseAll();
 };
