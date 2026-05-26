@@ -20,10 +20,10 @@ enum class GameState
 //scrolling starfield
 struct Star
 {
-    float X; 
-    float Y; 
-    float Speed; 
-    float Size; 
+    float X = 0.0f; 
+    float Y = 0.0f; 
+    float Speed = 0.0f; 
+    float Size = 0.0f; 
 };
 
 class Game
