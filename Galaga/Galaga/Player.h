@@ -1,4 +1,5 @@
 #pragma once
+#include "Collision.h"
 
 class Player
 {
@@ -14,4 +15,5 @@ public:
 
     float GetX() const;
     float GetY() const;
+    HitBox GetHitBox() const;
 };

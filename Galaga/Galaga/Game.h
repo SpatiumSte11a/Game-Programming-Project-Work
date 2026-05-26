@@ -1,7 +1,7 @@
 #pragma once
-#include <windows.h>
 #include <chrono>
 #include <string>
+#include <windows.h>
 #include "WindowContext.h"
 #include "GraphicsContext.h"
 #include "Player.h"
@@ -11,9 +11,9 @@
 
 enum class GameState
 {
-    Startup, 
-    Playing, 
-    Paused, 
+    Startup,
+    Playing,
+    Paused,
     Exit
 };
 
@@ -22,18 +22,16 @@ class Game
 private:
     WindowContext Window;
     GraphicsContext Graphics;
-    StartupScreen StartScreen; 
-
+    StartupScreen StartScreen;
     bool IsRunning;
-    GameState CurrentState; 
+    GameState CurrentState;
 
     std::chrono::high_resolution_clock::time_point PrevTime;
 
     float TitleUpdateTimer;
     int FrameCounter;
-    
-    float GlobalTime; 
-    int PlayerLives; 
+    float GlobalTime;
+    int PlayerLives;
 
     Player PlayerObject;
     PlayerBulletSystem PlayerBulletSystemObject;
@@ -50,10 +48,13 @@ public:
 
 private:
     float GetDeltaTime();
+    void ResetGame();
 
-    void ResetGame(); 
     void Input();
     void Update(float dt);
     void Render();
-    void RenderLives(); 
+    void RenderLives();
+
+    void HandlePlayerBulletVsEnemyCollision();
+    void HandleEnemyBulletVsPlayerCollision();
 };

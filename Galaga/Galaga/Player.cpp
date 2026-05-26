@@ -31,3 +31,13 @@ float Player::GetY() const
 {
     return Y;
 }
+
+HitBox Player::GetHitBox() const
+{
+    HitBox box = {};
+    box.X = X;
+    box.Y = Y;
+    box.HalfWidth = 0.04f;
+    box.HalfHeight = 0.05f;
+    return box;
+}

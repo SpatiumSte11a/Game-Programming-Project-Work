@@ -1,8 +1,10 @@
 #include "Game.h"
+#include "Collision.h"
 
 Game::Game()
     : Window(L"Galaga"),
     IsRunning(true),
+    CurrentState(GameState::Startup),
     TitleUpdateTimer(0.0f),
     FrameCounter(0),
     GlobalTime(0.0f),
@@ -19,6 +21,20 @@ bool Game::Initialize(HINSTANCE hInstance)
     if (!Graphics.Initialize(Window.hWnd, 720, 960))
         return false;
 
+    ResetGame();
+    return true;
+}
+
+void Game::ResetGame()
+{
+    CurrentState = GameState::Startup;
+    GlobalTime = 0.0f;
+    PlayerLives = 3;
+
+    PlayerObject = Player();
+    PlayerBulletSystemObject = PlayerBulletSystem();
+    EnemyBulletSystemObject = EnemyBulletSystem();
+
     float enemyX = 0.0f;
     float visualGap = 0.04f;
 
@@ -33,23 +49,17 @@ bool Game::Initialize(HINSTANCE hInstance)
     float triangleY = squareY + squareTop + visualGap + downTriangleBottom;
     float diamondY = triangleY + downTriangleTop + visualGap + diamondBottom;
 
+    Enemies[0] = Enemy();
     Enemies[0].SetType(EnemyType::Type1);
     Enemies[0].SetPosition(enemyX, squareY);
 
+    Enemies[1] = Enemy();
     Enemies[1].SetType(EnemyType::Type2);
     Enemies[1].SetPosition(enemyX, triangleY);
 
+    Enemies[2] = Enemy();
     Enemies[2].SetType(EnemyType::Type3);
     Enemies[2].SetPosition(enemyX, diamondY);
-
-    return true;
-}
-
-void Game::ResetGame()
-{
-    CurrentState = GameState::Startup;
-    //didnt allocate yet 
-    GlobalTime = 0.0f;
 }
 
 float Game::GetDeltaTime()
@@ -96,32 +106,27 @@ void Game::Run()
     }
 }
 
-void Game::Input() 
+void Game::Input()
 {
-    // ESC quits from anywhere
     if (GetAsyncKeyState(VK_ESCAPE) & 0x8000)
     {
         IsRunning = false;
         return;
     }
 
-    //R resets to startup screen
     if (GetAsyncKeyState('R') & 0x0001)
     {
         ResetGame();
         return;
     }
 
-    //Startup screen
     if (CurrentState == GameState::Startup)
     {
-        if (GetAsyncKeyState('S') & 0x0001)
+        if (GetAsyncKeyState(VK_RETURN) & 0x0001)
             CurrentState = GameState::Playing;
-
         return;
     }
 
-    //P for pause game
     if (GetAsyncKeyState('P') & 0x0001)
     {
         if (CurrentState == GameState::Playing)
@@ -133,9 +138,8 @@ void Game::Input()
 
 void Game::Update(float dt)
 {
-    GlobalTime += dt; 
+    GlobalTime += dt;
 
-    //stop game when on pause 
     if (CurrentState != GameState::Playing)
         return;
 
@@ -186,14 +190,65 @@ void Game::Update(float dt)
     }
 
     EnemyBulletSystemObject.Update(dt, type2CanShoot, type2X, type2Y);
+
+    HandlePlayerBulletVsEnemyCollision();
+    HandleEnemyBulletVsPlayerCollision();
+}
+
+void Game::HandlePlayerBulletVsEnemyCollision()
+{
+    for (int bulletIndex = 0; bulletIndex < PlayerBulletSystemObject.GetBulletCount(); bulletIndex++)
+    {
+        Bullet& bullet = PlayerBulletSystemObject.GetBullet(bulletIndex);
+
+        if (!bullet.GetIsActive())
+            continue;
+
+        for (int enemyIndex = 0; enemyIndex < EnemyCount; enemyIndex++)
+        {
+            if (!Enemies[enemyIndex].GetIsAlive())
+                continue;
+
+            if (CheckHitBoxCollision(bullet.GetHitBox(), Enemies[enemyIndex].GetHitBox()))
+            {
+                bullet.Deactivate();
+                Enemies[enemyIndex].TakeDamage();
+                break;
+            }
+        }
+    }
+}
+
+void Game::HandleEnemyBulletVsPlayerCollision()
+{
+    HitBox playerBox = PlayerObject.GetHitBox();
+
+    for (int bulletIndex = 0; bulletIndex < EnemyBulletSystemObject.GetBulletCount(); bulletIndex++)
+    {
+        Bullet& bullet = EnemyBulletSystemObject.GetBullet(bulletIndex);
+
+        if (!bullet.GetIsActive())
+            continue;
+
+        if (CheckHitBoxCollision(bullet.GetHitBox(), playerBox))
+        {
+            bullet.Deactivate();
+
+            if (PlayerLives > 0)
+                PlayerLives--;
+
+            if (PlayerLives <= 0)
+                ResetGame();
+        }
+    }
 }
 
 void Game::RenderLives()
 {
-    const float iconY = 0.88f;   // vertical position (NDC)
-    const float iconScale = 0.25f;   // DrawTriangle scaleX/Y
-    const float spacing = 0.14f;   // horizontal gap between icons
-    const float startX = 0.82f;   // x of the rightmost icon
+    const float iconY = 0.88f;
+    const float iconScale = 0.25f;
+    const float spacing = 0.14f;
+    const float startX = 0.82f;
 
     for (int i = 0; i < PlayerLives; ++i)
     {
@@ -206,30 +261,24 @@ void Game::Render()
 {
     Graphics.BeginFrame();
 
-    //startup screen
     if (CurrentState == GameState::Startup)
     {
         StartScreen.Render(Graphics, GlobalTime);
-
         Graphics.EndFrame();
         return;
     }
 
-    //pause screen
     if (CurrentState == GameState::Paused)
     {
         Graphics.DrawText("PAUSED", -0.35f, 0.1f, 1.5f);
-
         if (sinf(GlobalTime * 3.14f) > 0.0f)
         {
             Graphics.DrawText("PRESS P TO CONTINUE", -0.30f, -0.1f, 0.4f);
         }
-
         Graphics.EndFrame();
         return;
     }
 
-    // Determine player render position
     float drawPX = PlayerObject.GetX();
     float drawPY = PlayerObject.GetY();
     bool isCurrentlyCaptured = false;
@@ -238,8 +287,7 @@ void Game::Render()
     {
         if (Enemies[i].GetIsPlayerCaptured())
         {
-            // Position beside the boss and slightly lower
-            drawPX = Enemies[i].GetX() + 0.12f; 
+            drawPX = Enemies[i].GetX() + 0.12f;
             drawPY = Enemies[i].GetY();
             isCurrentlyCaptured = true;
             break;
@@ -247,43 +295,32 @@ void Game::Render()
     }
 
     if (isCurrentlyCaptured)
-    {
-        // Facing player side (downward)
         Graphics.DrawDownTriangle(drawPX, drawPY, 1.0f, 1.0f);
-    }
     else
-    {
         Graphics.DrawTriangle(drawPX, drawPY, 1.0f, 1.0f);
-    }
-    
+
     PlayerBulletSystemObject.Render(Graphics);
 
-    // UI Text
     Graphics.DrawText("R RESTART", -0.92f, 0.92f, 0.35f);
-
     Graphics.DrawText("P PAUSE", -0.92f, 0.82f, 0.35f);
 
-    // Lives
     RenderLives();
-    
+
     for (int i = 0; i < EnemyCount; i++)
     {
         if (!Enemies[i].GetIsAlive())
             continue;
 
-        // Render Tractor Beam for Boss
         if (Enemies[i].GetIsBeaming())
         {
             float bX = Enemies[i].GetX();
             float bY = Enemies[i].GetY();
             float scale = Enemies[i].GetBeamScale();
-            
-            // Draw expanding beam effect using inverted triangles
+
             for (int j = 0; j < 6; j++)
             {
                 float beamStep = (float)j * 0.12f * scale;
                 float beamWidth = 0.3f + (float)j * 0.1f;
-                // Use DrawDownTriangle for the beam "trapezoid" segments
                 Graphics.DrawDownTriangle(bX, bY - 0.1f - beamStep, beamWidth * scale, 0.4f * scale);
             }
         }
