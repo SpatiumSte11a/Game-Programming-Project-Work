@@ -48,6 +48,16 @@ float Bullet::GetY() const
     return Y;
 }
 
+HitBox Bullet::GetHitBox() const
+{
+    HitBox box = {};
+    box.X = X;
+    box.Y = Y;
+    box.HalfWidth = 0.012f;
+    box.HalfHeight = 0.020f;
+    return box;
+}
+
 PlayerBulletSystem::PlayerBulletSystem()
     : BulletSpeed(1.5f),
     FireCooldown(0.18f),
@@ -90,6 +100,21 @@ void PlayerBulletSystem::Render(GraphicsContext& graphics) const
     }
 }
 
+int PlayerBulletSystem::GetBulletCount() const
+{
+    return MaxBullets;
+}
+
+Bullet& PlayerBulletSystem::GetBullet(int index)
+{
+    return Bullets[index];
+}
+
+const Bullet& PlayerBulletSystem::GetBullet(int index) const
+{
+    return Bullets[index];
+}
+
 EnemyBulletSystem::EnemyBulletSystem()
     : BulletSpeed(-1.0f),
     FireCooldown(0.90f),
@@ -130,4 +155,19 @@ void EnemyBulletSystem::Render(GraphicsContext& graphics) const
             graphics.DrawQuad(Bullets[i].GetX(), Bullets[i].GetY(), 0.22f, 0.22f);
         }
     }
+}
+
+int EnemyBulletSystem::GetBulletCount() const
+{
+    return MaxBullets;
+}
+
+Bullet& EnemyBulletSystem::GetBullet(int index)
+{
+    return Bullets[index];
+}
+
+const Bullet& EnemyBulletSystem::GetBullet(int index) const
+{
+    return Bullets[index];
 }

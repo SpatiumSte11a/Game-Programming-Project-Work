@@ -1,4 +1,5 @@
 #pragma once
+#include "Collision.h"
 
 enum class EnemyType
 {
@@ -29,21 +30,19 @@ private:
     bool IsAlive;
     EnemyType Type;
     int Health;
-
     EnemyState State;
     float Timer;
     float ShootTimer;
     bool WantsToShoot;
 
-    // Dive start tracking to prevent jitter
     float DiveStartX;
     float DiveStartY;
 
-    // Tractor Beam & Capture logic
     bool IsBeaming;
     float BeamScale;
     float BeamTimer;
     bool IsPlayerCaptured;
+    bool HasCapturedShipVisual;
 
 public:
     Enemy();
@@ -56,18 +55,21 @@ public:
     float GetY() const;
     bool GetIsAlive() const;
     EnemyType GetType() const;
-
     bool GetWantsToShoot() const;
     void ClearWantsToShoot();
     float GetRadius() const;
-    void StartDive();
 
+    void StartDive();
     void TakeDamage();
     int GetHealth() const;
+
     bool GetIsBeaming() const;
     float GetBeamScale() const;
     bool GetIsPlayerCaptured() const;
+    bool GetHasCapturedShipVisual() const;
     void ReleasePlayer();
+
+    HitBox GetHitBox() const;
 
 private:
     void UpdateFormation(float dt);

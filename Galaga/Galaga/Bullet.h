@@ -1,4 +1,5 @@
 #pragma once
+#include "Collision.h"
 
 class GraphicsContext;
 
@@ -20,6 +21,7 @@ public:
     bool GetIsActive() const;
     float GetX() const;
     float GetY() const;
+    HitBox GetHitBox() const;
 };
 
 class PlayerBulletSystem
@@ -37,6 +39,10 @@ public:
 
     void Update(float dt, bool shootPressed, float playerX, float playerY);
     void Render(GraphicsContext& graphics) const;
+
+    int GetBulletCount() const;
+    Bullet& GetBullet(int index);
+    const Bullet& GetBullet(int index) const;
 };
 
 class EnemyBulletSystem
@@ -54,4 +60,8 @@ public:
 
     void Update(float dt, bool canShoot, float enemyX, float enemyY);
     void Render(GraphicsContext& graphics) const;
+
+    int GetBulletCount() const;
+    Bullet& GetBullet(int index);
+    const Bullet& GetBullet(int index) const;
 };
