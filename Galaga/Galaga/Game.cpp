@@ -166,9 +166,10 @@ void Game::Input()
        StartScreen.Input();                  
        if (StartScreen.ShouldStartGame())      
        {
-           ResetGame();
+           StartScreen.Reset();
            CurrentState = GameState::Playing;
        }
+       Return; 
    }
 
     //P for pause game
@@ -196,6 +197,12 @@ void Game::Update(float dt)
      }
  }
 
+      if (CurrentState == GameState::Startup)
+      {
+      // ? countdown timer ticks here
+      StartScreen.Update(dt);       
+      return;
+      } 
     //stop game when on pause 
     if (CurrentState != GameState::Playing)
         return;
@@ -353,9 +360,11 @@ void Game::Render()
     PlayerBulletSystemObject.Render(Graphics);
 
     // UI Text
-    Graphics.DrawText("R RESTART", -0.92f, 0.92f, 0.45f);
+    Graphics.DrawText("PRESS ESC TO EXIT", -0.92f, -0.82f, 0.45f);
 
-    Graphics.DrawText("P PAUSE", -0.92f, 0.82f, 0.45f);
+   Graphics.DrawText("PRESS R FOR RESTART", -0.92f, 0.92f, 0.45f);
+
+   Graphics.DrawText("PRESS P FOR PAUSE", -0.92f, 0.82f, 0.45f);
 
     // Lives
     RenderLives();
