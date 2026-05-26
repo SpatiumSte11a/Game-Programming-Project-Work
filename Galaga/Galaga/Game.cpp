@@ -3,6 +3,7 @@
 Game::Game()
     : Window(L"Galaga"),
     IsRunning(true),
+    CurrentState(GameState::Startup),
     TitleUpdateTimer(0.0f),
     FrameCounter(0),
     GlobalTime(0.0f),
@@ -19,6 +20,8 @@ bool Game::Initialize(HINSTANCE hInstance)
     if (!Graphics.Initialize(Window.hWnd, 720, 960))
         return false;
 
+    InitStars(); 
+    
     float enemyX = 0.0f;
     float visualGap = 0.04f;
 
@@ -42,6 +45,8 @@ bool Game::Initialize(HINSTANCE hInstance)
     Enemies[2].SetType(EnemyType::Type3);
     Enemies[2].SetPosition(enemyX, diamondY);
 
+    ResetGame(); 
+    
     return true;
 }
 
@@ -50,6 +55,49 @@ void Game::ResetGame()
     CurrentState = GameState::Startup;
     //didnt allocate yet 
     GlobalTime = 0.0f;
+
+      PlayerLives = 3;
+  StartScreen.Reset();
+
+  // reset player
+  PlayerObject = Player();
+
+  // reset bullet systems
+  PlayerBulletSystemObject = PlayerBulletSystem();
+  EnemyBulletSystemObject = EnemyBulletSystem();
+
+  // recreate enemies
+  float enemyX = 0.0f;
+  float visualGap = 0.04f;
+
+  float squareY = 0.42f;
+  float squareTop = 0.05f;
+
+  float downTriangleTop = 0.02f;
+  float downTriangleBottom = 0.08f;
+
+  float diamondBottom = 0.063f;
+
+  float triangleY =
+      squareY +
+      squareTop +
+      visualGap +
+      downTriangleBottom;
+
+  float diamondY =
+      triangleY +
+      downTriangleTop +
+      visualGap +
+      diamondBottom;
+
+  Enemies[0].SetType(EnemyType::Type1);
+  Enemies[0].SetPosition(enemyX, squareY);
+
+  Enemies[1].SetType(EnemyType::Type2);
+  Enemies[1].SetPosition(enemyX, triangleY);
+
+  Enemies[2].SetType(EnemyType::Type3);
+  Enemies[2].SetPosition(enemyX, diamondY);
 }
 
 float Game::GetDeltaTime()
@@ -114,12 +162,14 @@ void Game::Input()
 
     //Startup screen
     if (CurrentState == GameState::Startup)
-    {
-        if (GetAsyncKeyState('S') & 0x0001)
-            CurrentState = GameState::Playing;
-
-        return;
-    }
+   {
+       StartScreen.Input();                  
+       if (StartScreen.ShouldStartGame())      
+       {
+           ResetGame();
+           CurrentState = GameState::Playing;
+       }
+   }
 
     //P for pause game
     if (GetAsyncKeyState('P') & 0x0001)
@@ -134,6 +184,17 @@ void Game::Input()
 void Game::Update(float dt)
 {
     GlobalTime += dt; 
+    
+     for (int i = 0; i < StarCount; i++)
+ {
+     Stars[i].Y -= Stars[i].Speed * dt; 
+
+     if (Stars[i].Y < -1.1f) 
+     {
+         Stars[i].Y = 1.1f;
+         Stars[i].X = -1.0f + (rand() % 2000) / 1000.0f;
+     }
+ }
 
     //stop game when on pause 
     if (CurrentState != GameState::Playing)
@@ -202,10 +263,43 @@ void Game::RenderLives()
     }
 }
 
+void Game::InitStars()
+{
+    srand(42);  // fixed seed 
+    for (int i = 0; i < StarCount; i++)
+    {
+        Stars[i].X = -1.0f + (rand() % 2000) / 1000.0f;
+
+        Stars[i].Y = -1.0f + (rand() % 2000) / 1000.0f;
+
+        int layer = i % 3;
+        if (layer == 0) Stars[i].Speed = 0.05f;   
+        if (layer == 1) Stars[i].Speed = 0.10f;   
+        if (layer == 2) Stars[i].Speed = 0.18f;  
+
+        Stars[i].Size = 0.012f + (layer * 0.03f); 
+    }
+}
+
+void Game::RenderStars()
+{
+    for (int i = 0; i < StarCount; i++)
+    {
+        Graphics.DrawTriangle(
+            Stars[i].X,
+            Stars[i].Y,
+            Stars[i].Size,   // scaleX
+            Stars[i].Size    // scaleY
+        );
+    }
+}
+
 void Game::Render()
 {
     Graphics.BeginFrame();
 
+    RenderStars(); 
+    
     //startup screen
     if (CurrentState == GameState::Startup)
     {
@@ -259,9 +353,9 @@ void Game::Render()
     PlayerBulletSystemObject.Render(Graphics);
 
     // UI Text
-    Graphics.DrawText("R RESTART", -0.92f, 0.92f, 0.35f);
+    Graphics.DrawText("R RESTART", -0.92f, 0.92f, 0.45f);
 
-    Graphics.DrawText("P PAUSE", -0.92f, 0.82f, 0.35f);
+    Graphics.DrawText("P PAUSE", -0.92f, 0.82f, 0.45f);
 
     // Lives
     RenderLives();
