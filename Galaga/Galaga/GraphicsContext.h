@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <d3d11.h>
 #include <d3dcompiler.h>
+#include <string>
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -13,6 +14,12 @@ struct Vertex
     float x, y, z;
     float r, g, b, a;
 };
+
+struct FontVertex
+{
+    float x, y, z;
+    float u, v;
+}; 
 
 struct ConstantBuffer
 {
@@ -40,6 +47,21 @@ private:
     ID3D11Buffer* DiamondVertexBuffer;
     ID3D11Buffer* ConstantBufferGPU;
 
+    ID3D11Buffer* VertexBuffer;
+    ID3D11VertexShader* TextVertexShader;
+    ID3D11PixelShader* TextPixelShader;
+    ID3D11InputLayout* TextInputLayout;
+    ID3D11Buffer* TextVertexBuffer;
+    ID3D11ShaderResourceView* FontTexture;
+    ID3D11SamplerState* SamplerState;
+    ID3D11BlendState* BlendState;
+    int ViewportWidth;
+    int ViewportHeight;
+
+    bool CreateTextPipeline(); 
+    bool LoadFontTexture();
+    bool CreateBlendState();
+
 public:
     GraphicsContext();
     ~GraphicsContext();
@@ -51,6 +73,7 @@ public:
     void DrawDownTriangle(float offsetX, float offsetY, float scaleX, float scaleY);
     void DrawQuad(float offsetX, float offsetY, float scaleX, float scaleY);
     void DrawDiamond(float offsetX, float offsetY, float scaleX, float scaleY);
+    void DrawText(const std::string& text, float x, float y, float scale);
     void EndFrame();
 
 private:

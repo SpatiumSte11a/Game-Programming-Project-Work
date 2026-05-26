@@ -1,5 +1,8 @@
 #include "GraphicsContext.h"
 #include <cstring>
+#include <wincodec.h>
+#pragma comment(lib, "windowscodecs.lib")
+#include <vector>
 
 GraphicsContext::GraphicsContext()
     : Device(nullptr),
@@ -13,7 +16,17 @@ GraphicsContext::GraphicsContext()
     DownTriangleVertexBuffer(nullptr),
     QuadVertexBuffer(nullptr),
     DiamondVertexBuffer(nullptr),
-    ConstantBufferGPU(nullptr)
+    ConstantBufferGPU(nullptr),
+    VertexBuffer(nullptr),
+    TextVertexShader(nullptr),
+    TextPixelShader(nullptr),
+    TextInputLayout(nullptr),
+    TextVertexBuffer(nullptr),
+    FontTexture(nullptr),
+    SamplerState(nullptr),
+    BlendState(nullptr),
+    ViewportWidth(0),
+    ViewportHeight(0)
 {
 }
 
@@ -87,6 +100,15 @@ bool GraphicsContext::Initialize(HWND hWnd, int width, int height)
     if (!CreateDiamond())
         return false;
 
+    if (!CreateBlendState())
+        return false;
+
+    if (!CreateTextPipeline())
+        return false;
+
+    if (!LoadFontTexture())
+        return false;
+
     return true;
 }
 
@@ -110,6 +132,159 @@ bool GraphicsContext::CreateRenderTarget()
         return false;
 
     return true;
+}
+
+bool GraphicsContext::CreateTextPipeline()
+{
+    const char* src = R"(
+Texture2D   fontTex : register(t0);
+SamplerState samp   : register(s0);
+
+struct VS_INPUT { float3 pos : POSITION; float2 uv : TEXCOORD; };
+struct PS_INPUT { float4 pos : SV_POSITION; float2 uv : TEXCOORD; };
+
+PS_INPUT VSMain(VS_INPUT i)
+{
+    PS_INPUT o;
+    o.pos = float4(i.pos, 1.0f);
+    o.uv  = i.uv;
+    return o;
+}
+
+float4 PSMain(PS_INPUT i) : SV_TARGET
+{
+    float4 t = fontTex.Sample(samp, i.uv);
+
+    float alpha = (t.r + t.g + t.b) / 3.0f;
+
+    return float4(t.rgb, alpha);
+}
+
+)";
+
+    ID3DBlob* vsBlob = nullptr;
+    ID3DBlob* psBlob = nullptr;
+    ID3DBlob* errBlob = nullptr;
+
+    HRESULT hr = D3DCompile(src, strlen(src), nullptr, nullptr, nullptr,
+        "VSMain", "vs_5_0", 0, 0, &vsBlob, &errBlob);
+    if (FAILED(hr))
+    {
+        if (errBlob) { OutputDebugStringA((char*)errBlob->GetBufferPointer()); errBlob->Release(); }
+        return false;
+    }
+
+    hr = D3DCompile(src, strlen(src), nullptr, nullptr, nullptr,
+        "PSMain", "ps_5_0", 0, 0, &psBlob, &errBlob);
+    if (FAILED(hr))
+    {
+        vsBlob->Release();
+        if (errBlob) { OutputDebugStringA((char*)errBlob->GetBufferPointer()); errBlob->Release(); }
+        return false;
+    }
+
+    Device->CreateVertexShader(vsBlob->GetBufferPointer(),
+        vsBlob->GetBufferSize(), nullptr, &TextVertexShader);
+    Device->CreatePixelShader(psBlob->GetBufferPointer(),
+        psBlob->GetBufferSize(), nullptr, &TextPixelShader);
+
+    D3D11_INPUT_ELEMENT_DESC layout[] =
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+    Device->CreateInputLayout(layout, 2,
+        vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(),
+        &TextInputLayout);
+
+    vsBlob->Release();
+    psBlob->Release();
+
+    D3D11_BUFFER_DESC bd = {};
+    bd.Usage = D3D11_USAGE_DYNAMIC;
+    bd.ByteWidth = sizeof(FontVertex) * 6;
+    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+    hr = Device->CreateBuffer(&bd, nullptr, &TextVertexBuffer);
+    return SUCCEEDED(hr);
+}
+
+bool GraphicsContext::LoadFontTexture()
+{
+    IWICImagingFactory* factory = nullptr;
+
+    HRESULT hr = CoCreateInstance(
+        CLSID_WICImagingFactory, nullptr,
+        CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
+    if (FAILED(hr)) return false;
+
+    IWICBitmapDecoder* decoder = nullptr;
+    hr = factory->CreateDecoderFromFilename(
+        L"font.png", nullptr, GENERIC_READ,
+        WICDecodeMetadataCacheOnLoad, &decoder);
+    if (FAILED(hr)) { factory->Release(); return false; }
+
+    IWICBitmapFrameDecode* frame = nullptr;
+    hr = decoder->GetFrame(0, &frame);
+    if (FAILED(hr)) { decoder->Release(); factory->Release(); return false; }
+
+    IWICFormatConverter* conv = nullptr;
+    hr = factory->CreateFormatConverter(&conv);
+    if (FAILED(hr)) { frame->Release(); decoder->Release(); factory->Release(); return false; }
+
+    hr = conv->Initialize(
+        frame, GUID_WICPixelFormat32bppRGBA,
+        WICBitmapDitherTypeNone, nullptr, 0.0,
+        WICBitmapPaletteTypeCustom);
+    if (FAILED(hr)) { conv->Release(); frame->Release(); decoder->Release(); factory->Release(); return false; }
+
+    UINT w = 0, h = 0;
+    conv->GetSize(&w, &h);
+
+    BYTE* pixels = new BYTE[w * h * 4];
+    hr = conv->CopyPixels(nullptr, w * 4, w * h * 4, pixels);
+    if (FAILED(hr))
+    {
+        delete[] pixels;
+        conv->Release(); frame->Release(); decoder->Release(); factory->Release();
+        return false;
+    }
+
+    D3D11_TEXTURE2D_DESC td = {};
+    td.Width = w;
+    td.Height = h;
+    td.MipLevels = 1;
+    td.ArraySize = 1;
+    td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    td.SampleDesc.Count = 1;
+    td.Usage = D3D11_USAGE_IMMUTABLE;  // never changes after upload
+    td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    D3D11_SUBRESOURCE_DATA sd = {};
+    sd.pSysMem = pixels;
+    sd.SysMemPitch = w * 4;
+
+    ID3D11Texture2D* tex = nullptr;
+    hr = Device->CreateTexture2D(&td, &sd, &tex);
+    delete[] pixels;
+
+    conv->Release(); frame->Release(); decoder->Release(); factory->Release();
+
+    if (FAILED(hr)) return false;
+
+    hr = Device->CreateShaderResourceView(tex, nullptr, &FontTexture);
+    tex->Release();
+    if (FAILED(hr)) return false;
+
+    D3D11_SAMPLER_DESC samp = {};
+    samp.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+    samp.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    samp.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    samp.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+
+    hr = Device->CreateSamplerState(&samp, &SamplerState);
+    return SUCCEEDED(hr);
 }
 
 bool GraphicsContext::CreateShaders()
@@ -264,6 +439,22 @@ float4 PSMain(PS_INPUT input) : SV_TARGET
         return false;
 
     return true;
+}
+
+bool GraphicsContext::CreateBlendState()
+{
+    D3D11_BLEND_DESC bd = {};
+    bd.RenderTarget[0].BlendEnable = TRUE;
+    bd.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    bd.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+    bd.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    bd.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+    bd.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    bd.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    bd.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+    HRESULT hr = Device->CreateBlendState(&bd, &BlendState);
+    return SUCCEEDED(hr);
 }
 
 bool GraphicsContext::CreateTriangle()
@@ -486,6 +677,75 @@ void GraphicsContext::DrawDiamond(float offsetX, float offsetY, float scaleX, fl
     Context->VSSetConstantBuffers(0, 1, &ConstantBufferGPU);
 
     Context->Draw(6, 0);
+}
+
+void GraphicsContext::DrawText(const std::string& text, float startX, float startY, float scale)
+{
+
+    const int   COLS = 13;
+    const float CELL_W = 1.0f / COLS;        // 0.07692 UV units per cell
+    const float CELL_H = 1.0f / 2.0f;        // 0.5 UV units per row
+
+    const float INS_X0 = 0.0024f;
+    const float INS_X1 = 0.0030f;
+    const float INS_Y = 0.0394f;
+
+    const float GLYPH_W = 0.07f * scale;
+    const float GLYPH_H = 0.09f * scale;
+    const float SPACE_W = 0.055f * scale;
+
+    UINT stride = sizeof(FontVertex), offset = 0;
+    Context->IASetInputLayout(TextInputLayout);
+    Context->IASetVertexBuffers(0, 1, &TextVertexBuffer, &stride, &offset);
+    Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    Context->VSSetShader(TextVertexShader, nullptr, 0);
+    Context->PSSetShader(TextPixelShader, nullptr, 0);
+    Context->PSSetShaderResources(0, 1, &FontTexture);
+    Context->PSSetSamplers(0, 1, &SamplerState);
+
+    float x = startX;
+
+    for (char c : text)
+    {
+        if (c == ' ') { x += SPACE_W; continue; }
+
+        if (c >= 'a' && c <= 'z') c -= 32;
+        if (c < 'A' || c > 'Z')   continue;
+
+        int idx = c - 'A';
+        int col = idx % COLS;
+        int row = idx / COLS;
+
+        float u0 = col * CELL_W + INS_X0;
+        float u1 = (col + 1) * CELL_W - INS_X1;
+        float v0 = row * CELL_H + INS_Y;
+        float v1 = (row + 1) * CELL_H - INS_Y;
+
+        float x1 = x + GLYPH_W;
+        float y1 = startY - GLYPH_H;
+
+        FontVertex quad[6] =
+        {
+            { x,  startY, 0.f, u0, v0 },
+            { x1, startY, 0.f, u1, v0 },
+            { x,  y1,     0.f, u0, v1 },
+
+            { x1, startY, 0.f, u1, v0 },
+            { x1, y1,     0.f, u1, v1 },
+            { x,  y1,     0.f, u0, v1 },
+        };
+
+        D3D11_MAPPED_SUBRESOURCE mapped = {};
+        HRESULT hr = Context->Map(TextVertexBuffer, 0,
+            D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+        if (FAILED(hr)) return;
+        memcpy(mapped.pData, quad, sizeof(quad));
+        Context->Unmap(TextVertexBuffer, 0);
+
+        Context->Draw(6, 0);
+
+        x += GLYPH_W;
+    }
 }
 
 void GraphicsContext::EndFrame()
