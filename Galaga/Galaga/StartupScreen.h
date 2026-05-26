@@ -6,13 +6,20 @@ class StartupScreen
 public:
     void Initialize();
     void Input();
+    void Update(float dt);
     void Render(GraphicsContext& graphics, float globalTime);
 
-    bool ShouldStartGame()   const { return StartPressed; }
+    bool ShouldStartGame()   const { return StartPressed && CountdownDone; }
     bool ShouldRestartGame() const { return RestartPressed; }
     void Reset();
 
 private:
+    HWND  WindowHandle = nullptr;
     bool StartPressed = false;
     bool RestartPressed = false;
+
+    bool  CountdownActive = false;
+    bool  CountdownDone = false;
+    float CountdownTimer = 0.0f;  
+    static const float CountdownDuration;
 };
