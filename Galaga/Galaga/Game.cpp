@@ -139,12 +139,35 @@ void Game::Update(float dt)
     if (CurrentState != GameState::Playing)
         return;
 
-    bool moveLeft = (GetAsyncKeyState(VK_LEFT) & 0x8000) || (GetAsyncKeyState('A') & 0x8000);
-    bool moveRight = (GetAsyncKeyState(VK_RIGHT) & 0x8000) || (GetAsyncKeyState('D') & 0x8000);
-    bool shootPressed = (GetAsyncKeyState(VK_SPACE) & 0x8000);
+    bool isCaptured = false;
+    for (int i = 0; i < EnemyCount; i++)
+    {
+        if (Enemies[i].GetIsPlayerCaptured())
+        {
+            isCaptured = true;
+            break;
+        }
+    }
+
+    bool moveLeft = !isCaptured && ((GetAsyncKeyState(VK_LEFT) & 0x8000) || (GetAsyncKeyState('A') & 0x8000));
+    bool moveRight = !isCaptured && ((GetAsyncKeyState(VK_RIGHT) & 0x8000) || (GetAsyncKeyState('D') & 0x8000));
+    bool shootPressed = !isCaptured && (GetAsyncKeyState(VK_SPACE) & 0x8000);
 
     PlayerObject.Update(dt, moveLeft, moveRight);
-    PlayerBulletSystemObject.Update(dt, shootPressed, PlayerObject.GetX(), PlayerObject.GetY());
+
+    float pX = PlayerObject.GetX();
+    float pY = PlayerObject.GetY();
+
+    for (int i = 0; i < EnemyCount; i++)
+    {
+        if (Enemies[i].GetIsPlayerCaptured())
+        {
+            pX = Enemies[i].GetX();
+            pY = Enemies[i].GetY() - 0.12f;
+        }
+    }
+
+    PlayerBulletSystemObject.Update(dt, shootPressed, pX, pY);
 
     bool type2CanShoot = false;
     float type2X = 0.0f;
@@ -152,7 +175,7 @@ void Game::Update(float dt)
 
     for (int i = 0; i < EnemyCount; i++)
     {
-        Enemies[i].Update(dt);
+        Enemies[i].Update(dt, PlayerObject.GetX(), PlayerObject.GetY());
 
         if (Enemies[i].GetIsAlive() && Enemies[i].GetType() == EnemyType::Type2)
         {
@@ -206,10 +229,33 @@ void Game::Render()
         return;
     }
 
-    Graphics.DrawTriangle(PlayerObject.GetX(), PlayerObject.GetY(), 1.0f, 1.0f);
-    PlayerBulletSystemObject.Render(Graphics);
+    // Determine player render position
+    float drawPX = PlayerObject.GetX();
+    float drawPY = PlayerObject.GetY();
+    bool isCurrentlyCaptured = false;
 
-    // Player bullets
+    for (int i = 0; i < EnemyCount; i++)
+    {
+        if (Enemies[i].GetIsPlayerCaptured())
+        {
+            // Position beside the boss and slightly lower
+            drawPX = Enemies[i].GetX() + 0.12f; 
+            drawPY = Enemies[i].GetY();
+            isCurrentlyCaptured = true;
+            break;
+        }
+    }
+
+    if (isCurrentlyCaptured)
+    {
+        // Facing player side (downward)
+        Graphics.DrawDownTriangle(drawPX, drawPY, 1.0f, 1.0f);
+    }
+    else
+    {
+        Graphics.DrawTriangle(drawPX, drawPY, 1.0f, 1.0f);
+    }
+    
     PlayerBulletSystemObject.Render(Graphics);
 
     // UI Text
@@ -224,6 +270,23 @@ void Game::Render()
     {
         if (!Enemies[i].GetIsAlive())
             continue;
+
+        // Render Tractor Beam for Boss
+        if (Enemies[i].GetIsBeaming())
+        {
+            float bX = Enemies[i].GetX();
+            float bY = Enemies[i].GetY();
+            float scale = Enemies[i].GetBeamScale();
+            
+            // Draw expanding beam effect using inverted triangles
+            for (int j = 0; j < 6; j++)
+            {
+                float beamStep = (float)j * 0.12f * scale;
+                float beamWidth = 0.3f + (float)j * 0.1f;
+                // Use DrawDownTriangle for the beam "trapezoid" segments
+                Graphics.DrawDownTriangle(bX, bY - 0.1f - beamStep, beamWidth * scale, 0.4f * scale);
+            }
+        }
 
         switch (Enemies[i].GetType())
         {
