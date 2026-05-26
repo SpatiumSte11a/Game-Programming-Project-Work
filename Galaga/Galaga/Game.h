@@ -18,12 +18,21 @@ enum class GameState
     Exit
 };
 
+struct Star
+{
+    float X = 0.0f;
+    float Y = 0.0f;
+    float Speed = 0.0f;
+    float Size = 0.0f;
+};
+
 class Game
 {
 private:
     WindowContext Window;
     GraphicsContext Graphics;
     StartupScreen StartScreen;
+
     bool IsRunning;
     GameState CurrentState;
 
@@ -31,6 +40,7 @@ private:
 
     float TitleUpdateTimer;
     int FrameCounter;
+
     float GlobalTime;
     int PlayerLives;
 
@@ -42,6 +52,9 @@ private:
 
     float GameOverTimer;
     float GameOverDelay;
+
+    static const int StarCount = 80;
+    Star Stars[StarCount];
 
     Player PlayerObject;
     PlayerBulletSystem PlayerBulletSystemObject;
@@ -58,6 +71,7 @@ public:
 
 private:
     float GetDeltaTime();
+
     void ResetGame();
     void SetupEnemies();
     void LoseLifeAndStartRespawn();
@@ -66,6 +80,8 @@ private:
     void Update(float dt);
     void Render();
     void RenderLives();
+    void RenderStars();
+    void InitStars();
 
     void HandlePlayerBulletVsEnemyCollision();
     bool HandleEnemyBulletVsPlayerCollision();

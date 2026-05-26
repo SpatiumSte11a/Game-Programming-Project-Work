@@ -1,5 +1,7 @@
 #include "Game.h"
 #include "Collision.h"
+#include <cstdlib>
+#include <cmath>
 
 Game::Game()
     : Window(L"Galaga"),
@@ -28,7 +30,10 @@ bool Game::Initialize(HINSTANCE hInstance)
     if (!Graphics.Initialize(Window.hWnd, 720, 960))
         return false;
 
+    StartScreen.Initialize();
+    InitStars();
     ResetGame();
+
     return true;
 }
 
@@ -72,6 +77,8 @@ void Game::ResetGame()
     InvincibleTimer = 0.0f;
 
     GameOverTimer = 0.0f;
+
+    StartScreen.Reset();
 
     PlayerObject = Player();
     PlayerBulletSystemObject = PlayerBulletSystem();
@@ -143,7 +150,6 @@ void Game::Run()
             if (TitleUpdateTimer >= 0.5f)
             {
                 float fps = FrameCounter / TitleUpdateTimer;
-
                 std::wstring title = L"Galaga | FPS: " + std::to_wstring((int)fps);
                 SetWindowText(Window.hWnd, title.c_str());
 
@@ -170,8 +176,13 @@ void Game::Input()
 
     if (CurrentState == GameState::Startup)
     {
-        if (GetAsyncKeyState(VK_RETURN) & 0x0001)
+        StartScreen.Input();
+
+        if (StartScreen.ShouldStartGame())
+        {
             CurrentState = GameState::Playing;
+        }
+
         return;
     }
 
@@ -191,10 +202,27 @@ void Game::Update(float dt)
 {
     GlobalTime += dt;
 
+    for (int i = 0; i < StarCount; i++)
+    {
+        Stars[i].Y -= Stars[i].Speed * dt;
+
+        if (Stars[i].Y < -1.1f)
+        {
+            Stars[i].Y = 1.1f;
+            Stars[i].X = -1.0f + (rand() % 2000) / 1000.0f;
+        }
+    }
+
+    if (CurrentState == GameState::Startup)
+    {
+        StartScreen.Update(dt);
+        return;
+    }
+
     if (InvincibleTimer > 0.0f)
         InvincibleTimer -= dt;
 
-    if (CurrentState == GameState::Startup || CurrentState == GameState::Paused)
+    if (CurrentState == GameState::Paused)
         return;
 
     if (IsRespawning)
@@ -401,9 +429,42 @@ void Game::RenderLives()
     }
 }
 
+void Game::InitStars()
+{
+    srand(42);
+
+    for (int i = 0; i < StarCount; i++)
+    {
+        Stars[i].X = -1.0f + (rand() % 2000) / 1000.0f;
+        Stars[i].Y = -1.0f + (rand() % 2000) / 1000.0f;
+
+        int layer = i % 3;
+        if (layer == 0) Stars[i].Speed = 0.05f;
+        if (layer == 1) Stars[i].Speed = 0.10f;
+        if (layer == 2) Stars[i].Speed = 0.18f;
+
+        Stars[i].Size = 0.012f + (layer * 0.03f);
+    }
+}
+
+void Game::RenderStars()
+{
+    for (int i = 0; i < StarCount; i++)
+    {
+        Graphics.DrawTriangle(
+            Stars[i].X,
+            Stars[i].Y,
+            Stars[i].Size,
+            Stars[i].Size
+        );
+    }
+}
+
 void Game::Render()
 {
     Graphics.BeginFrame();
+
+    RenderStars();
 
     if (CurrentState == GameState::Startup)
     {
@@ -415,10 +476,12 @@ void Game::Render()
     if (CurrentState == GameState::Paused)
     {
         Graphics.DrawText("PAUSED", -0.35f, 0.1f, 1.5f);
+
         if (sinf(GlobalTime * 3.14f) > 0.0f)
         {
             Graphics.DrawText("PRESS P TO CONTINUE", -0.30f, -0.1f, 0.4f);
         }
+
         Graphics.EndFrame();
         return;
     }
@@ -430,8 +493,9 @@ void Game::Render()
 
     PlayerBulletSystemObject.Render(Graphics);
 
-    Graphics.DrawText("R RESTART", -0.92f, 0.92f, 0.35f);
-    Graphics.DrawText("P PAUSE", -0.92f, 0.82f, 0.35f);
+    Graphics.DrawText("ESC - EXIT", -0.92f, -0.92f, 0.35f);
+    Graphics.DrawText("P - PAUSE", -0.48f, -0.92f, 0.35f);
+    Graphics.DrawText("R - RESTART", -0.02f, -0.92f, 0.35f);
 
     if (CurrentState == GameState::GameOverWait)
     {
