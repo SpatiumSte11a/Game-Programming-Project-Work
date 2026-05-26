@@ -7,18 +7,33 @@
 #include "Player.h"
 #include "Bullet.h"
 #include "Enemy.h"
+#include "StartupScreen.h"
+
+enum class GameState
+{
+    Startup, 
+    Playing, 
+    Paused, 
+    Exit
+};
 
 class Game
 {
 private:
     WindowContext Window;
     GraphicsContext Graphics;
+    StartupScreen StartScreen; 
+
     bool IsRunning;
+    GameState CurrentState; 
 
     std::chrono::high_resolution_clock::time_point PrevTime;
 
     float TitleUpdateTimer;
     int FrameCounter;
+    
+    float GlobalTime; 
+    int PlayerLives; 
 
     Player PlayerObject;
     PlayerBulletSystem PlayerBulletSystemObject;
@@ -36,7 +51,9 @@ public:
 private:
     float GetDeltaTime();
 
+    void ResetGame(); 
     void Input();
     void Update(float dt);
     void Render();
+    void RenderLives(); 
 };
