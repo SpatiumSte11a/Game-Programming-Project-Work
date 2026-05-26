@@ -17,6 +17,15 @@ enum class GameState
     Exit
 };
 
+//scrolling starfield
+struct Star
+{
+    float X; 
+    float Y; 
+    float Speed; 
+    float Size; 
+};
+
 class Game
 {
 private:
@@ -34,6 +43,9 @@ private:
     
     float GlobalTime; 
     int PlayerLives; 
+
+    static const int StarCount = 80;  
+    Star Stars[StarCount]; 
 
     Player PlayerObject;
     PlayerBulletSystem PlayerBulletSystemObject;
@@ -56,4 +68,6 @@ private:
     void Update(float dt);
     void Render();
     void RenderLives(); 
+    void RenderStars(); 
+    void InitStars(); 
 };
