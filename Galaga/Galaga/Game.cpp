@@ -8,7 +8,14 @@ Game::Game()
     TitleUpdateTimer(0.0f),
     FrameCounter(0),
     GlobalTime(0.0f),
-    PlayerLives(3)
+    PlayerLives(3),
+    IsRespawning(false),
+    RespawnTimer(0.0f),
+    RespawnDelay(1.5f),
+    InvincibleTimer(0.0f),
+    InvincibleDuration(1.0f),
+    GameOverTimer(0.0f),
+    GameOverDelay(10.0f)
 {
     PrevTime = std::chrono::high_resolution_clock::now();
 }
@@ -25,16 +32,8 @@ bool Game::Initialize(HINSTANCE hInstance)
     return true;
 }
 
-void Game::ResetGame()
+void Game::SetupEnemies()
 {
-    CurrentState = GameState::Startup;
-    GlobalTime = 0.0f;
-    PlayerLives = 3;
-
-    PlayerObject = Player();
-    PlayerBulletSystemObject = PlayerBulletSystem();
-    EnemyBulletSystemObject = EnemyBulletSystem();
-
     float enemyX = 0.0f;
     float visualGap = 0.04f;
 
@@ -60,6 +59,55 @@ void Game::ResetGame()
     Enemies[2] = Enemy();
     Enemies[2].SetType(EnemyType::Type3);
     Enemies[2].SetPosition(enemyX, diamondY);
+}
+
+void Game::ResetGame()
+{
+    CurrentState = GameState::Startup;
+    GlobalTime = 0.0f;
+    PlayerLives = 3;
+
+    IsRespawning = false;
+    RespawnTimer = 0.0f;
+    InvincibleTimer = 0.0f;
+
+    GameOverTimer = 0.0f;
+
+    PlayerObject = Player();
+    PlayerBulletSystemObject = PlayerBulletSystem();
+    EnemyBulletSystemObject = EnemyBulletSystem();
+
+    SetupEnemies();
+}
+
+void Game::LoseLifeAndStartRespawn()
+{
+    if (IsRespawning || CurrentState == GameState::GameOverWait)
+        return;
+
+    if (PlayerLives > 0)
+        PlayerLives--;
+
+    if (PlayerLives <= 0)
+    {
+        PlayerLives = 0;
+        IsRespawning = false;
+        RespawnTimer = 0.0f;
+        InvincibleTimer = 0.0f;
+        GameOverTimer = GameOverDelay;
+        CurrentState = GameState::GameOverWait;
+
+        PlayerObject = Player();
+        PlayerBulletSystemObject = PlayerBulletSystem();
+        return;
+    }
+
+    IsRespawning = true;
+    RespawnTimer = RespawnDelay;
+
+    PlayerObject = Player();
+    PlayerBulletSystemObject = PlayerBulletSystem();
+    EnemyBulletSystemObject = EnemyBulletSystem();
 }
 
 float Game::GetDeltaTime()
@@ -127,6 +175,9 @@ void Game::Input()
         return;
     }
 
+    if (CurrentState == GameState::GameOverWait)
+        return;
+
     if (GetAsyncKeyState('P') & 0x0001)
     {
         if (CurrentState == GameState::Playing)
@@ -140,8 +191,34 @@ void Game::Update(float dt)
 {
     GlobalTime += dt;
 
-    if (CurrentState != GameState::Playing)
+    if (InvincibleTimer > 0.0f)
+        InvincibleTimer -= dt;
+
+    if (CurrentState == GameState::Startup || CurrentState == GameState::Paused)
         return;
+
+    if (IsRespawning)
+    {
+        RespawnTimer -= dt;
+
+        if (RespawnTimer <= 0.0f)
+        {
+            IsRespawning = false;
+            PlayerObject = Player();
+            InvincibleTimer = InvincibleDuration;
+        }
+    }
+
+    if (CurrentState == GameState::GameOverWait)
+    {
+        GameOverTimer -= dt;
+
+        if (GameOverTimer <= 0.0f)
+        {
+            ResetGame();
+            return;
+        }
+    }
 
     bool isCaptured = false;
     for (int i = 0; i < EnemyCount; i++)
@@ -153,11 +230,20 @@ void Game::Update(float dt)
         }
     }
 
-    bool moveLeft = !isCaptured && ((GetAsyncKeyState(VK_LEFT) & 0x8000) || (GetAsyncKeyState('A') & 0x8000));
-    bool moveRight = !isCaptured && ((GetAsyncKeyState(VK_RIGHT) & 0x8000) || (GetAsyncKeyState('D') & 0x8000));
-    bool shootPressed = !isCaptured && (GetAsyncKeyState(VK_SPACE) & 0x8000);
+    bool canControlPlayer =
+        CurrentState == GameState::Playing &&
+        !IsRespawning &&
+        !isCaptured;
 
-    PlayerObject.Update(dt, moveLeft, moveRight);
+    bool moveLeft = canControlPlayer && ((GetAsyncKeyState(VK_LEFT) & 0x8000) || (GetAsyncKeyState('A') & 0x8000));
+    bool moveRight = canControlPlayer && ((GetAsyncKeyState(VK_RIGHT) & 0x8000) || (GetAsyncKeyState('D') & 0x8000));
+    bool shootPressed = canControlPlayer && (GetAsyncKeyState(VK_SPACE) & 0x8000);
+
+    if (!IsRespawning && CurrentState == GameState::Playing)
+        PlayerObject.Update(dt, moveLeft, moveRight);
+
+    float enemyTargetX = (IsRespawning || CurrentState == GameState::GameOverWait) ? 100.0f : PlayerObject.GetX();
+    float enemyTargetY = (IsRespawning || CurrentState == GameState::GameOverWait) ? -100.0f : PlayerObject.GetY();
 
     float pX = PlayerObject.GetX();
     float pY = PlayerObject.GetY();
@@ -166,8 +252,8 @@ void Game::Update(float dt)
     {
         if (Enemies[i].GetIsPlayerCaptured())
         {
-            pX = Enemies[i].GetX();
-            pY = Enemies[i].GetY() - 0.12f;
+            pX = Enemies[i].GetX() + 0.12f;
+            pY = Enemies[i].GetY();
         }
     }
 
@@ -179,7 +265,7 @@ void Game::Update(float dt)
 
     for (int i = 0; i < EnemyCount; i++)
     {
-        Enemies[i].Update(dt, PlayerObject.GetX(), PlayerObject.GetY());
+        Enemies[i].Update(dt, enemyTargetX, enemyTargetY);
 
         if (Enemies[i].GetIsAlive() && Enemies[i].GetType() == EnemyType::Type2)
         {
@@ -189,10 +275,24 @@ void Game::Update(float dt)
         }
     }
 
+    HandlePlayerBulletVsEnemyCollision();
+
+    if (CurrentState == GameState::Playing)
+    {
+        if (HandlePlayerVsEnemyCollision())
+            return;
+
+        if (HandlePlayerCaptureCollision())
+            return;
+    }
+
     EnemyBulletSystemObject.Update(dt, type2CanShoot, type2X, type2Y);
 
-    HandlePlayerBulletVsEnemyCollision();
-    HandleEnemyBulletVsPlayerCollision();
+    if (CurrentState == GameState::Playing)
+    {
+        if (HandleEnemyBulletVsPlayerCollision())
+            return;
+    }
 }
 
 void Game::HandlePlayerBulletVsEnemyCollision()
@@ -219,8 +319,11 @@ void Game::HandlePlayerBulletVsEnemyCollision()
     }
 }
 
-void Game::HandleEnemyBulletVsPlayerCollision()
+bool Game::HandleEnemyBulletVsPlayerCollision()
 {
+    if (IsRespawning || InvincibleTimer > 0.0f || CurrentState != GameState::Playing)
+        return false;
+
     HitBox playerBox = PlayerObject.GetHitBox();
 
     for (int bulletIndex = 0; bulletIndex < EnemyBulletSystemObject.GetBulletCount(); bulletIndex++)
@@ -233,14 +336,55 @@ void Game::HandleEnemyBulletVsPlayerCollision()
         if (CheckHitBoxCollision(bullet.GetHitBox(), playerBox))
         {
             bullet.Deactivate();
-
-            if (PlayerLives > 0)
-                PlayerLives--;
-
-            if (PlayerLives <= 0)
-                ResetGame();
+            LoseLifeAndStartRespawn();
+            return true;
         }
     }
+
+    return false;
+}
+
+bool Game::HandlePlayerVsEnemyCollision()
+{
+    if (IsRespawning || InvincibleTimer > 0.0f || CurrentState != GameState::Playing)
+        return false;
+
+    HitBox playerBox = PlayerObject.GetHitBox();
+
+    for (int enemyIndex = 0; enemyIndex < EnemyCount; enemyIndex++)
+    {
+        if (!Enemies[enemyIndex].GetIsAlive())
+            continue;
+
+        if (CheckHitBoxCollision(playerBox, Enemies[enemyIndex].GetHitBox()))
+        {
+            LoseLifeAndStartRespawn();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool Game::HandlePlayerCaptureCollision()
+{
+    if (IsRespawning || InvincibleTimer > 0.0f || CurrentState != GameState::Playing)
+        return false;
+
+    for (int enemyIndex = 0; enemyIndex < EnemyCount; enemyIndex++)
+    {
+        if (!Enemies[enemyIndex].GetIsAlive())
+            continue;
+
+        if (Enemies[enemyIndex].GetIsPlayerCaptured())
+        {
+            Enemies[enemyIndex].ReleasePlayer();
+            LoseLifeAndStartRespawn();
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void Game::RenderLives()
@@ -279,30 +423,20 @@ void Game::Render()
         return;
     }
 
-    float drawPX = PlayerObject.GetX();
-    float drawPY = PlayerObject.GetY();
-    bool isCurrentlyCaptured = false;
-
-    for (int i = 0; i < EnemyCount; i++)
+    if (!IsRespawning && CurrentState != GameState::GameOverWait)
     {
-        if (Enemies[i].GetIsPlayerCaptured())
-        {
-            drawPX = Enemies[i].GetX() + 0.12f;
-            drawPY = Enemies[i].GetY();
-            isCurrentlyCaptured = true;
-            break;
-        }
+        Graphics.DrawTriangle(PlayerObject.GetX(), PlayerObject.GetY(), 1.0f, 1.0f);
     }
-
-    if (isCurrentlyCaptured)
-        Graphics.DrawDownTriangle(drawPX, drawPY, 1.0f, 1.0f);
-    else
-        Graphics.DrawTriangle(drawPX, drawPY, 1.0f, 1.0f);
 
     PlayerBulletSystemObject.Render(Graphics);
 
     Graphics.DrawText("R RESTART", -0.92f, 0.92f, 0.35f);
     Graphics.DrawText("P PAUSE", -0.92f, 0.82f, 0.35f);
+
+    if (CurrentState == GameState::GameOverWait)
+    {
+        Graphics.DrawText("GAME OVER", -0.40f, 0.10f, 1.2f);
+    }
 
     RenderLives();
 
@@ -338,6 +472,11 @@ void Game::Render()
         case EnemyType::Type3:
             Graphics.DrawDiamond(Enemies[i].GetX(), Enemies[i].GetY(), 0.9f, 0.9f);
             break;
+        }
+
+        if (Enemies[i].GetHasCapturedShipVisual())
+        {
+            Graphics.DrawDownTriangle(Enemies[i].GetX() + 0.12f, Enemies[i].GetY(), 0.8f, 0.8f);
         }
     }
 

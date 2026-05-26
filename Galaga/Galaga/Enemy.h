@@ -42,6 +42,7 @@ private:
     float BeamScale;
     float BeamTimer;
     bool IsPlayerCaptured;
+    bool HasCapturedShipVisual;
 
 public:
     Enemy();
@@ -65,6 +66,7 @@ public:
     bool GetIsBeaming() const;
     float GetBeamScale() const;
     bool GetIsPlayerCaptured() const;
+    bool GetHasCapturedShipVisual() const;
     void ReleasePlayer();
 
     HitBox GetHitBox() const;

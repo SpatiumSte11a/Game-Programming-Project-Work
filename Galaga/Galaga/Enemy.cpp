@@ -22,7 +22,8 @@ Enemy::Enemy()
     IsBeaming(false),
     BeamScale(0.0f),
     BeamTimer(0.0f),
-    IsPlayerCaptured(false)
+    IsPlayerCaptured(false),
+    HasCapturedShipVisual(false)
 {
     ShootTimer = 0.5f + (static_cast<float>(rand()) / RAND_MAX) * 2.0f;
 }
@@ -206,6 +207,7 @@ void Enemy::UpdateBeaming(float dt, float playerX, float playerY)
     if (fabsf(playerX - X) < beamWidth && playerY < Y)
     {
         IsPlayerCaptured = true;
+        HasCapturedShipVisual = true;
         IsBeaming = false;
         State = EnemyState::Capturing;
         Timer = 0.0f;
@@ -302,6 +304,7 @@ void Enemy::TakeDamage()
         WantsToShoot = false;
         IsBeaming = false;
         IsPlayerCaptured = false;
+        HasCapturedShipVisual = false;
     }
 }
 
@@ -358,6 +361,11 @@ float Enemy::GetBeamScale() const
 bool Enemy::GetIsPlayerCaptured() const
 {
     return IsPlayerCaptured;
+}
+
+bool Enemy::GetHasCapturedShipVisual() const
+{
+    return HasCapturedShipVisual;
 }
 
 void Enemy::ReleasePlayer()

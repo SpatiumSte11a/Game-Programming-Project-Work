@@ -14,6 +14,7 @@ enum class GameState
     Startup,
     Playing,
     Paused,
+    GameOverWait,
     Exit
 };
 
@@ -33,6 +34,15 @@ private:
     float GlobalTime;
     int PlayerLives;
 
+    bool IsRespawning;
+    float RespawnTimer;
+    float RespawnDelay;
+    float InvincibleTimer;
+    float InvincibleDuration;
+
+    float GameOverTimer;
+    float GameOverDelay;
+
     Player PlayerObject;
     PlayerBulletSystem PlayerBulletSystemObject;
     EnemyBulletSystem EnemyBulletSystemObject;
@@ -49,6 +59,8 @@ public:
 private:
     float GetDeltaTime();
     void ResetGame();
+    void SetupEnemies();
+    void LoseLifeAndStartRespawn();
 
     void Input();
     void Update(float dt);
@@ -56,5 +68,7 @@ private:
     void RenderLives();
 
     void HandlePlayerBulletVsEnemyCollision();
-    void HandleEnemyBulletVsPlayerCollision();
+    bool HandleEnemyBulletVsPlayerCollision();
+    bool HandlePlayerVsEnemyCollision();
+    bool HandlePlayerCaptureCollision();
 };
