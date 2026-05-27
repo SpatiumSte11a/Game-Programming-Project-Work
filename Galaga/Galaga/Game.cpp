@@ -65,6 +65,19 @@ void Game::SetupEnemiesForWave(int wave)
         EnemySlotsActive[i] = true;
         Enemies[i].SetType(waveDef.Spawns[i].Type);
         Enemies[i].SetPosition(waveDef.Spawns[i].X, waveDef.Spawns[i].Y);
+
+        if (waveDef.Spawns[i].Type == EnemyType::Type1)
+        {
+            Enemies[i].SetMoveSpeedScale(waveDef.Type1MoveSpeedScale);
+        }
+        else if (waveDef.Spawns[i].Type == EnemyType::Type2)
+        {
+            Enemies[i].SetShootCooldownScale(waveDef.Type2ShootCooldownScale);
+        }
+        else if (waveDef.Spawns[i].Type == EnemyType::Type3)
+        {
+            Enemies[i].SetAttackDelayScale(waveDef.Type3AttackDelayScale);
+        }
     }
 }
 

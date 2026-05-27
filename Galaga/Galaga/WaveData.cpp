@@ -14,6 +14,9 @@ WaveDefinition GetWaveDefinition(int wave)
 {
     WaveDefinition result;
 
+    if (wave > 10)
+        wave = 10;
+
     const float type1Y = 0.20f;
     const float type2Y = 0.48f;
     const float type3Y = 0.74f;
@@ -39,7 +42,7 @@ WaveDefinition GetWaveDefinition(int wave)
     const float wave6Type2MidRight = 0.25f;
     const float wave6Type2FarRight = 0.75f;
 
-    if (wave <= 1)
+    if (wave == 1)
     {
         result.WaveNumber = 1;
         result.SpawnCount = 3;
@@ -121,6 +124,28 @@ WaveDefinition GetWaveDefinition(int wave)
         result.Spawns[7] = MakeSpawn(EnemyType::Type2, wave6Type2FarRight, type2Y);
 
         result.Spawns[8] = MakeSpawn(EnemyType::Type3, centerX, type3Y);
+    }
+
+    if (wave == 7)
+    {
+        result.Type2ShootCooldownScale = 0.75f;
+    }
+    else if (wave == 8)
+    {
+        result.Type2ShootCooldownScale = 0.75f;
+        result.Type1MoveSpeedScale = 1.20f;
+    }
+    else if (wave == 9)
+    {
+        result.Type2ShootCooldownScale = 0.75f;
+        result.Type1MoveSpeedScale = 1.20f;
+        result.Type3AttackDelayScale = 0.75f;
+    }
+    else if (wave >= 10)
+    {
+        result.Type2ShootCooldownScale = 0.65f;
+        result.Type1MoveSpeedScale = 1.35f;
+        result.Type3AttackDelayScale = 0.60f;
     }
 
     return result;

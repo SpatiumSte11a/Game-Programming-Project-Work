@@ -16,6 +16,10 @@ struct WaveDefinition
     int WaveNumber = 1;
     int SpawnCount = 0;
     EnemySpawnData Spawns[WaveMaxEnemies];
+
+    float Type2ShootCooldownScale = 1.0f;
+    float Type1MoveSpeedScale = 1.0f;
+    float Type3AttackDelayScale = 1.0f;
 };
 
 WaveDefinition GetWaveDefinition(int wave);

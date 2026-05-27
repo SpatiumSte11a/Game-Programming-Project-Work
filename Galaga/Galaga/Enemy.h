@@ -42,12 +42,20 @@ private:
     bool IsPlayerCaptured;
     bool HasCapturedShipVisual;
 
+    float MoveSpeedScale;
+    float ShootCooldownScale;
+    float AttackDelayScale;
+
 public:
     Enemy();
 
     void SetType(EnemyType type);
     void SetPosition(float x, float y);
     void Update(float dt, float playerX = 0.0f, float playerY = 0.0f);
+
+    void SetMoveSpeedScale(float value);
+    void SetShootCooldownScale(float value);
+    void SetAttackDelayScale(float value);
 
     float GetX() const;
     float GetY() const;

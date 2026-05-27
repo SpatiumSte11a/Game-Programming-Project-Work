@@ -23,7 +23,10 @@ Enemy::Enemy()
     BeamScale(0.0f),
     BeamTimer(0.0f),
     IsPlayerCaptured(false),
-    HasCapturedShipVisual(false)
+    HasCapturedShipVisual(false),
+    MoveSpeedScale(1.0f),
+    ShootCooldownScale(1.0f),
+    AttackDelayScale(1.0f)
 {
     ShootTimer = 0.5f + (static_cast<float>(rand()) / RAND_MAX) * 2.0f;
 }
@@ -55,9 +58,33 @@ void Enemy::SetPosition(float x, float y)
     FormationY = y;
 }
 
+void Enemy::SetMoveSpeedScale(float value)
+{
+    if (value <= 0.0f)
+        value = 1.0f;
+
+    MoveSpeedScale = value;
+}
+
+void Enemy::SetShootCooldownScale(float value)
+{
+    if (value <= 0.0f)
+        value = 1.0f;
+
+    ShootCooldownScale = value;
+}
+
+void Enemy::SetAttackDelayScale(float value)
+{
+    if (value <= 0.0f)
+        value = 1.0f;
+
+    AttackDelayScale = value;
+}
+
 void Enemy::UpdateFormation(float dt)
 {
-    FormationX += MoveDirection * MoveSpeed * dt;
+    FormationX += MoveDirection * MoveSpeed * MoveSpeedScale * dt;
 
     if (FormationX > 0.85f)
     {
@@ -121,11 +148,11 @@ void Enemy::UpdateIdle(float dt)
         if (ShootTimer <= 0.0f)
         {
             WantsToShoot = true;
-            ShootTimer = 0.8f + (static_cast<float>(rand()) / RAND_MAX) * 1.0f;
+            ShootTimer = (0.8f + (static_cast<float>(rand()) / RAND_MAX) * 1.0f) * ShootCooldownScale;
         }
     }
 
-    float triggerTime = (Type == EnemyType::Type3) ? 8.0f : 6.0f;
+    float triggerTime = (Type == EnemyType::Type3 ? 8.0f : 6.0f) * AttackDelayScale;
     if (Timer > triggerTime)
     {
         StartDive();
@@ -148,7 +175,7 @@ void Enemy::UpdateDive(float dt, float playerX, float playerY)
 
     if (Type == EnemyType::Type1)
     {
-        float t = std::min(Timer * 0.6f, 1.0f);
+        float t = std::min(Timer * 0.6f * MoveSpeedScale, 1.0f);
 
         float p0x = DiveStartX;
         float p0y = DiveStartY;
@@ -168,7 +195,7 @@ void Enemy::UpdateDive(float dt, float playerX, float playerY)
     }
     else if (Type == EnemyType::Type2)
     {
-        Y = DiveStartY - 0.75f * Timer;
+        Y = DiveStartY - 0.75f * MoveSpeedScale * Timer;
         X = DiveStartX + sinf(Timer * 10.0f) * 0.35f;
 
         if (Y <= -1.0f)
@@ -179,7 +206,7 @@ void Enemy::UpdateDive(float dt, float playerX, float playerY)
     }
     else if (Type == EnemyType::Type3)
     {
-        float t = std::min(Timer / 1.5f, 1.0f);
+        float t = std::min((Timer / 1.5f) * MoveSpeedScale, 1.0f);
 
         X = DiveStartX * (1.0f - t);
         Y = DiveStartY * (1.0f - t) + 0.0f * t;
@@ -201,7 +228,7 @@ void Enemy::UpdateDive(float dt, float playerX, float playerY)
     {
         WantsToShoot = true;
         float cooldown = (Type == EnemyType::Type2) ? 0.8f : 1.5f;
-        ShootTimer = cooldown + (static_cast<float>(rand()) / RAND_MAX) * 1.0f;
+        ShootTimer = (cooldown + (static_cast<float>(rand()) / RAND_MAX) * 1.0f) * ShootCooldownScale;
     }
 }
 
@@ -252,7 +279,7 @@ void Enemy::UpdateCapturing(float dt)
 
 void Enemy::UpdateLoop(float dt)
 {
-    Timer += dt * 5.0f;
+    Timer += dt * 5.0f * MoveSpeedScale;
 
     float radius = (Type == EnemyType::Type3) ? 0.4f : 0.18f;
     float centerX = 0.0f;
@@ -274,7 +301,7 @@ void Enemy::UpdateReturn(float dt)
 {
     if (Y > -1.1f && State == EnemyState::Returning && Timer == 0.0f)
     {
-        Y -= MoveSpeed * 2.5f * dt;
+        Y -= MoveSpeed * MoveSpeedScale * 2.5f * dt;
 
         if (Y <= -1.1f)
         {
@@ -287,7 +314,7 @@ void Enemy::UpdateReturn(float dt)
     }
     else if (Timer > 0.0f)
     {
-        float t = std::min((Timer - 1.0f) * 2.0f, 1.0f);
+        float t = std::min((Timer - 1.0f) * 2.0f * MoveSpeedScale, 1.0f);
         Timer += dt;
 
         X = DiveStartX * (1.0f - t) + FormationX * t;
