@@ -93,6 +93,15 @@ StartupScreen, 별 배경, 카운트다운 흐름, 텍스트 배치 등을 현�
 ---
 ## 2026-05-26
 
+###Sera
+**Task:**
+
+StartupScreen 구현 및 게임 상태 흐름 정리 (`e5e6c1c`)
+**Details:** 
+StartupScreen.cpp / .h 를 별도 파일로 분리하여 구현했습니다.
+Game.cpp 의 메인 루프 구조(Input / Update / Render)를 유지하면서
+GameState enum 을 통해 화면 전환 흐름을 관리했습니다. Start 기능, Paused 기능, GlobalTime 구현했습니다.
+
 ### **Pak Denis**
 
 **Task:**
