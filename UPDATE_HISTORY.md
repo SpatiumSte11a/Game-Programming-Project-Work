@@ -56,6 +56,40 @@ commit message를 **`UPDATE_HISTORY`**로 작성해 주세요.
 
 # Updates
 
+* * *
+
+## 2026-05-27
+
+### Pak Denis
+
+Task:
+
+  * hitbox 추가 및 player/enemy collision 연결 (`51254a0`)
+
+Details:
+Player, Enemy, Bullet에 hitbox를 연결하고, player bullet vs enemy, enemy bullet vs player, player vs enemy 충돌 흐름을 현재 구조에 맞게 정리했습니다.
+또한 적과 플레이어의 기본 상호작용을 실제 게임 흐름 안에서 확인할 수 있도록 연결했습니다.
+
+### Pak Denis
+
+Task:
+
+  * collision 및 hitbox 기본 구조 구현 (`9bd2b21`)
+
+Details:
+기본 collision 구조를 프로젝트에 추가하고, hitbox 판정과 respawn, game state 흐름이 함께 동작하도록 정리했습니다.
+이 작업을 통해 단순 렌더링과 발사 프로토타입 단계를 넘어서 실제 충돌과 life 처리까지 연결되는 기반을 만들었습니다.
+
+### Pak Denis
+
+Task:
+
+  * manually integrate Sera UI into current main structure (`6056889`)
+
+Details:
+Sera가 작업한 시작 화면 UI 내용을 최신 main 구조에 맞게 수동으로 통합했습니다.
+StartupScreen, 별 배경, 카운트다운 흐름, 텍스트 배치 등을 현재 collision, respawn, game state 로직과 호환되도록 다시 정리하고, 빌드 및 실행 가능한 상태를 확인했습니다.
+
 ---
 ## 2026-05-26
 
