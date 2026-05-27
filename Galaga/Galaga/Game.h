@@ -43,6 +43,7 @@ private:
 
     float GlobalTime;
     int PlayerLives;
+    int Score;
 
     bool IsRespawning;
     float RespawnTimer;

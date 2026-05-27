@@ -23,6 +23,7 @@ GraphicsContext::GraphicsContext()
     TextInputLayout(nullptr),
     TextVertexBuffer(nullptr),
     FontTexture(nullptr),
+    NumbersTexture(nullptr),
     SamplerState(nullptr),
     BlendState(nullptr),
     ViewportWidth(0),
@@ -49,6 +50,15 @@ void GraphicsContext::ReleaseAll()
     if (SwapChain) { SwapChain->Release(); SwapChain = nullptr; }
     if (Context) { Context->Release(); Context = nullptr; }
     if (Device) { Device->Release(); Device = nullptr; }
+
+    if (FontTexture) { FontTexture->Release(); FontTexture = nullptr; }
+    if (NumbersTexture) { NumbersTexture->Release(); NumbersTexture = nullptr; }
+    if (TextVertexBuffer) { TextVertexBuffer->Release(); TextVertexBuffer = nullptr; }
+    if (TextVertexShader) { TextVertexShader->Release(); TextVertexShader = nullptr; }
+    if (TextPixelShader) { TextPixelShader->Release(); TextPixelShader = nullptr; }
+    if (TextInputLayout) { TextInputLayout->Release(); TextInputLayout = nullptr; }
+    if (SamplerState) { SamplerState->Release(); SamplerState = nullptr; }
+    if (BlendState) { BlendState->Release(); BlendState = nullptr; }
 }
 
 bool GraphicsContext::Initialize(HWND hWnd, int width, int height)
@@ -106,7 +116,7 @@ bool GraphicsContext::Initialize(HWND hWnd, int width, int height)
     if (!CreateTextPipeline())
         return false;
 
-    if (!LoadFontTexture())
+    if (!LoadTextures())
         return false;
 
     return true;
@@ -154,10 +164,12 @@ PS_INPUT VSMain(VS_INPUT i)
 float4 PSMain(PS_INPUT i) : SV_TARGET
 {
     float4 t = fontTex.Sample(samp, i.uv);
+    
+    // Simple black color keying: if the pixel is very dark, make it transparent
+    float brightness = (t.r + t.g + t.b) / 3.0f;
+    if (brightness < 0.05f) discard;
 
-    float alpha = (t.r + t.g + t.b) / 3.0f;
-
-    return float4(t.rgb, alpha);
+    return float4(t.rgb, 1.0f);
 }
 
 )";
@@ -210,81 +222,107 @@ float4 PSMain(PS_INPUT i) : SV_TARGET
     return SUCCEEDED(hr);
 }
 
-bool GraphicsContext::LoadFontTexture()
+bool GraphicsContext::LoadTextures()
 {
     IWICImagingFactory* factory = nullptr;
-
-    HRESULT hr = CoCreateInstance(
-        CLSID_WICImagingFactory, nullptr,
-        CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
+    HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
     if (FAILED(hr)) return false;
 
-    IWICBitmapDecoder* decoder = nullptr;
-    hr = factory->CreateDecoderFromFilename(
-        L"font.png", nullptr, GENERIC_READ,
-        WICDecodeMetadataCacheOnLoad, &decoder);
-    if (FAILED(hr)) { factory->Release(); return false; }
-
-    IWICBitmapFrameDecode* frame = nullptr;
-    hr = decoder->GetFrame(0, &frame);
-    if (FAILED(hr)) { decoder->Release(); factory->Release(); return false; }
-
-    IWICFormatConverter* conv = nullptr;
-    hr = factory->CreateFormatConverter(&conv);
-    if (FAILED(hr)) { frame->Release(); decoder->Release(); factory->Release(); return false; }
-
-    hr = conv->Initialize(
-        frame, GUID_WICPixelFormat32bppRGBA,
-        WICBitmapDitherTypeNone, nullptr, 0.0,
-        WICBitmapPaletteTypeCustom);
-    if (FAILED(hr)) { conv->Release(); frame->Release(); decoder->Release(); factory->Release(); return false; }
-
-    UINT w = 0, h = 0;
-    conv->GetSize(&w, &h);
-
-    BYTE* pixels = new BYTE[w * h * 4];
-    hr = conv->CopyPixels(nullptr, w * 4, w * h * 4, pixels);
-    if (FAILED(hr))
-    {
+    auto LoadTex = [&](LPCWSTR path, ID3D11ShaderResourceView** srv) -> bool {
+        IWICBitmapDecoder* decoder = nullptr;
+        if (FAILED(factory->CreateDecoderFromFilename(path, nullptr, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &decoder))) return false;
+        IWICBitmapFrameDecode* frame = nullptr;
+        decoder->GetFrame(0, &frame);
+        IWICFormatConverter* conv = nullptr;
+        factory->CreateFormatConverter(&conv);
+        conv->Initialize(frame, GUID_WICPixelFormat32bppRGBA, WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom);
+        UINT w = 0, h = 0;
+        conv->GetSize(&w, &h);
+        BYTE* pixels = new BYTE[w * h * 4];
+        conv->CopyPixels(nullptr, w * 4, w * h * 4, pixels);
+        D3D11_TEXTURE2D_DESC td = {};
+        td.Width = w; td.Height = h; td.MipLevels = 1; td.ArraySize = 1;
+        td.Format = DXGI_FORMAT_R8G8B8A8_UNORM; td.SampleDesc.Count = 1;
+        td.Usage = D3D11_USAGE_IMMUTABLE; td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        D3D11_SUBRESOURCE_DATA sd = { pixels, (UINT)(w * 4), 0 };
+        ID3D11Texture2D* tex = nullptr;
+        hr = Device->CreateTexture2D(&td, &sd, &tex);
         delete[] pixels;
-        conv->Release(); frame->Release(); decoder->Release(); factory->Release();
-        return false;
-    }
+        conv->Release(); frame->Release(); decoder->Release();
+        if (FAILED(hr)) return false;
+        hr = Device->CreateShaderResourceView(tex, nullptr, srv);
+        tex->Release();
+        return SUCCEEDED(hr);
+    };
 
-    D3D11_TEXTURE2D_DESC td = {};
-    td.Width = w;
-    td.Height = h;
-    td.MipLevels = 1;
-    td.ArraySize = 1;
-    td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    td.SampleDesc.Count = 1;
-    td.Usage = D3D11_USAGE_IMMUTABLE;  // never changes after upload
-    td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    if (!LoadTex(L"font.png", &FontTexture)) { factory->Release(); return false; }
+    if (!LoadTex(L"numbers.png", &NumbersTexture)) { factory->Release(); return false; }
 
-    D3D11_SUBRESOURCE_DATA sd = {};
-    sd.pSysMem = pixels;
-    sd.SysMemPitch = w * 4;
-
-    ID3D11Texture2D* tex = nullptr;
-    hr = Device->CreateTexture2D(&td, &sd, &tex);
-    delete[] pixels;
-
-    conv->Release(); frame->Release(); decoder->Release(); factory->Release();
-
-    if (FAILED(hr)) return false;
-
-    hr = Device->CreateShaderResourceView(tex, nullptr, &FontTexture);
-    tex->Release();
-    if (FAILED(hr)) return false;
+    factory->Release();
 
     D3D11_SAMPLER_DESC samp = {};
     samp.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
     samp.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
     samp.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
     samp.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-
     hr = Device->CreateSamplerState(&samp, &SamplerState);
     return SUCCEEDED(hr);
+}
+
+void GraphicsContext::DrawNumbers(const std::string& text, float startX, float startY, float scale)
+{
+    const int   COLS = 10;
+    const float CELL_W = 1.0f / COLS;
+    const float CELL_H = 1.0f;
+
+    const float GLYPH_W = 0.06f * scale;
+    const float GLYPH_H = 0.08f * scale;
+    const float SPACE_W = 0.05f * scale;
+
+    UINT stride = sizeof(FontVertex), offset = 0;
+    Context->IASetInputLayout(TextInputLayout);
+    Context->IASetVertexBuffers(0, 1, &TextVertexBuffer, &stride, &offset);
+    Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    Context->VSSetShader(TextVertexShader, nullptr, 0);
+    Context->PSSetShader(TextPixelShader, nullptr, 0);
+    Context->PSSetShaderResources(0, 1, &NumbersTexture);
+    Context->PSSetSamplers(0, 1, &SamplerState);
+
+    float x = startX;
+    for (char c : text)
+    {
+        if (c == ' ') { x += SPACE_W; continue; }
+        if (c < '0' || c > '9') continue;
+
+        int digit = c - '0';
+        int idx = (digit == 0) ? 9 : (digit - 1); // 1-9 are at indices 0-8, 0 is at index 9
+        float u0 = idx * CELL_W;
+        float u1 = (idx + 1) * CELL_W;
+        float v0 = 0.0f;
+        float v1 = 1.0f;
+
+        float x1 = x + GLYPH_W;
+        float y1 = startY - GLYPH_H;
+
+        FontVertex quad[6] =
+        {
+            { x,  startY, 0.f, u0, v0 },
+            { x1, startY, 0.f, u1, v0 },
+            { x,  y1,     0.f, u0, v1 },
+            { x1, startY, 0.f, u1, v0 },
+            { x1, y1,     0.f, u1, v1 },
+            { x,  y1,     0.f, u0, v1 },
+        };
+
+        D3D11_MAPPED_SUBRESOURCE mapped = {};
+        if (SUCCEEDED(Context->Map(TextVertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+        {
+            memcpy(mapped.pData, quad, sizeof(quad));
+            Context->Unmap(TextVertexBuffer, 0);
+            Context->Draw(6, 0);
+        }
+        x += GLYPH_W;
+    }
 }
 
 bool GraphicsContext::CreateShaders()
