@@ -11,6 +11,7 @@ Game::Game()
     FrameCounter(0),
     GlobalTime(0.0f),
     PlayerLives(3),
+    Score(0),
     IsRespawning(false),
     RespawnTimer(0.0f),
     RespawnDelay(1.5f),
@@ -71,6 +72,7 @@ void Game::ResetGame()
     CurrentState = GameState::Startup;
     GlobalTime = 0.0f;
     PlayerLives = 3;
+    Score = 0;
 
     IsRespawning = false;
     RespawnTimer = 0.0f;
@@ -341,6 +343,16 @@ void Game::HandlePlayerBulletVsEnemyCollision()
             {
                 bullet.Deactivate();
                 Enemies[enemyIndex].TakeDamage();
+
+                if (!Enemies[enemyIndex].GetIsAlive())
+                {
+                    switch (Enemies[enemyIndex].GetType())
+                    {
+                    case EnemyType::Type1: Score += 100; break;
+                    case EnemyType::Type2: Score += 200; break;
+                    case EnemyType::Type3: Score += 500; break;
+                    }
+                }
                 break;
             }
         }
@@ -503,6 +515,10 @@ void Game::Render()
     }
 
     RenderLives();
+
+    std::string scoreStr = std::to_string(Score);
+    while (scoreStr.length() < 6) scoreStr = "0" + scoreStr;
+    Graphics.DrawNumbers(scoreStr, 0.54f, 0.81f, 0.75f);
 
     for (int i = 0; i < EnemyCount; i++)
     {

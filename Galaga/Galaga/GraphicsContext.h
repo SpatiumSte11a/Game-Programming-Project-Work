@@ -53,13 +53,14 @@ private:
     ID3D11InputLayout* TextInputLayout;
     ID3D11Buffer* TextVertexBuffer;
     ID3D11ShaderResourceView* FontTexture;
+    ID3D11ShaderResourceView* NumbersTexture;
     ID3D11SamplerState* SamplerState;
     ID3D11BlendState* BlendState;
     int ViewportWidth;
     int ViewportHeight;
 
     bool CreateTextPipeline(); 
-    bool LoadFontTexture();
+    bool LoadTextures();
     bool CreateBlendState();
 
 public:
@@ -74,6 +75,7 @@ public:
     void DrawQuad(float offsetX, float offsetY, float scaleX, float scaleY);
     void DrawDiamond(float offsetX, float offsetY, float scaleX, float scaleY);
     void DrawText(const std::string& text, float x, float y, float scale);
+    void DrawNumbers(const std::string& text, float x, float y, float scale);
     void EndFrame();
 
 private:
