@@ -116,34 +116,30 @@ const Bullet& PlayerBulletSystem::GetBullet(int index) const
 }
 
 EnemyBulletSystem::EnemyBulletSystem()
-    : BulletSpeed(-1.0f),
-    FireCooldown(0.90f),
-    FireTimer(0.0f)
+    : BulletSpeed(-1.0f)
 {
 }
 
-void EnemyBulletSystem::Update(float dt, bool canShoot, float enemyX, float enemyY)
+void EnemyBulletSystem::Update(float dt)
 {
-    if (FireTimer > 0.0f)
-        FireTimer -= dt;
-
-    if (canShoot && FireTimer <= 0.0f)
-    {
-        for (int i = 0; i < MaxBullets; i++)
-        {
-            if (!Bullets[i].GetIsActive())
-            {
-                Bullets[i].Spawn(enemyX, enemyY - 0.08f, BulletSpeed);
-                FireTimer = FireCooldown;
-                break;
-            }
-        }
-    }
-
     for (int i = 0; i < MaxBullets; i++)
     {
         Bullets[i].Update(dt);
     }
+}
+
+bool EnemyBulletSystem::TryShoot(float enemyX, float enemyY)
+{
+    for (int i = 0; i < MaxBullets; i++)
+    {
+        if (!Bullets[i].GetIsActive())
+        {
+            Bullets[i].Spawn(enemyX, enemyY - 0.08f, BulletSpeed);
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void EnemyBulletSystem::Render(GraphicsContext& graphics) const

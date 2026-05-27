@@ -114,6 +114,17 @@ void Enemy::UpdateIdle(float dt)
 
     Timer += dt;
 
+    if (Type == EnemyType::Type2)
+    {
+        ShootTimer -= dt;
+
+        if (ShootTimer <= 0.0f)
+        {
+            WantsToShoot = true;
+            ShootTimer = 0.8f + (static_cast<float>(rand()) / RAND_MAX) * 1.0f;
+        }
+    }
+
     float triggerTime = (Type == EnemyType::Type3) ? 8.0f : 6.0f;
     if (Timer > triggerTime)
     {

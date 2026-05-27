@@ -48,17 +48,16 @@ public:
 class EnemyBulletSystem
 {
 private:
-    static const int MaxBullets = 20;
+    static const int MaxBullets = 40;
     Bullet Bullets[MaxBullets];
 
     float BulletSpeed;
-    float FireCooldown;
-    float FireTimer;
 
 public:
     EnemyBulletSystem();
 
-    void Update(float dt, bool canShoot, float enemyX, float enemyY);
+    void Update(float dt);
+    bool TryShoot(float enemyX, float enemyY);
     void Render(GraphicsContext& graphics) const;
 
     int GetBulletCount() const;

@@ -332,9 +332,7 @@ void Game::Update(float dt)
 
     PlayerBulletSystemObject.Update(dt, shootPressed, pX, pY);
 
-    bool type2CanShoot = false;
-    float type2X = 0.0f;
-    float type2Y = 0.0f;
+    EnemyBulletSystemObject.Update(dt);
 
     for (int i = 0; i < EnemyCount; i++)
     {
@@ -343,11 +341,12 @@ void Game::Update(float dt)
 
         Enemies[i].Update(dt, enemyTargetX, enemyTargetY);
 
-        if (Enemies[i].GetIsAlive() && Enemies[i].GetType() == EnemyType::Type2)
+        if (Enemies[i].GetIsAlive() &&
+            Enemies[i].GetType() == EnemyType::Type2 &&
+            Enemies[i].GetWantsToShoot())
         {
-            type2CanShoot = true;
-            type2X = Enemies[i].GetX();
-            type2Y = Enemies[i].GetY();
+            EnemyBulletSystemObject.TryShoot(Enemies[i].GetX(), Enemies[i].GetY());
+            Enemies[i].ClearWantsToShoot();
         }
     }
 
@@ -361,8 +360,6 @@ void Game::Update(float dt)
         if (HandlePlayerCaptureCollision())
             return;
     }
-
-    EnemyBulletSystemObject.Update(dt, type2CanShoot, type2X, type2Y);
 
     if (CurrentState == GameState::Playing)
     {
