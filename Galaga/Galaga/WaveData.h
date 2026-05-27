@@ -1,7 +1,7 @@
 #pragma once
 #include "Enemy.h"
 
-static const int WaveMaxEnemies = 6;
+static const int WaveMaxEnemies = 9;
 
 struct EnemySpawnData
 {

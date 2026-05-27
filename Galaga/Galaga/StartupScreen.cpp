@@ -2,7 +2,7 @@
 #include <windows.h>
 #include <cmath>
 
-const float StartupScreen::CountdownDuration = 5.0f;
+const float StartupScreen::CountdownDuration = 2.0f;
 
 void StartupScreen::Initialize()
 {

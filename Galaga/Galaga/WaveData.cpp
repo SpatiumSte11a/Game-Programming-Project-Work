@@ -25,6 +25,20 @@ WaveDefinition GetWaveDefinition(int wave)
     const float gapLeftX = -0.375f;
     const float gapRightX = 0.375f;
 
+    const float wave4LeftOuter = -0.90f;
+    const float wave4LeftInner = -0.30f;
+    const float wave4RightInner = 0.30f;
+    const float wave4RightOuter = 0.90f;
+
+    const float wave5Type2Left = -0.50f;
+    const float wave5Type2Center = 0.00f;
+    const float wave5Type2Right = 0.50f;
+
+    const float wave6Type2FarLeft = -0.75f;
+    const float wave6Type2MidLeft = -0.25f;
+    const float wave6Type2MidRight = 0.25f;
+    const float wave6Type2FarRight = 0.75f;
+
     if (wave <= 1)
     {
         result.WaveNumber = 1;
@@ -46,9 +60,9 @@ WaveDefinition GetWaveDefinition(int wave)
         result.Spawns[3] = MakeSpawn(EnemyType::Type2, gapLeftX, type2Y);
         result.Spawns[4] = MakeSpawn(EnemyType::Type2, gapRightX, type2Y);
     }
-    else
+    else if (wave == 3)
     {
-        result.WaveNumber = wave;
+        result.WaveNumber = 3;
         result.SpawnCount = 6;
 
         result.Spawns[0] = MakeSpawn(EnemyType::Type1, leftX, type1Y);
@@ -59,6 +73,54 @@ WaveDefinition GetWaveDefinition(int wave)
         result.Spawns[4] = MakeSpawn(EnemyType::Type2, gapRightX, type2Y);
 
         result.Spawns[5] = MakeSpawn(EnemyType::Type3, centerX, type3Y);
+    }
+    else if (wave == 4)
+    {
+        result.WaveNumber = 4;
+        result.SpawnCount = 7;
+
+        result.Spawns[0] = MakeSpawn(EnemyType::Type1, wave4LeftOuter, type1Y);
+        result.Spawns[1] = MakeSpawn(EnemyType::Type1, wave4LeftInner, type1Y);
+        result.Spawns[2] = MakeSpawn(EnemyType::Type1, wave4RightInner, type1Y);
+        result.Spawns[3] = MakeSpawn(EnemyType::Type1, wave4RightOuter, type1Y);
+
+        result.Spawns[4] = MakeSpawn(EnemyType::Type2, gapLeftX, type2Y);
+        result.Spawns[5] = MakeSpawn(EnemyType::Type2, gapRightX, type2Y);
+
+        result.Spawns[6] = MakeSpawn(EnemyType::Type3, centerX, type3Y);
+    }
+    else if (wave == 5)
+    {
+        result.WaveNumber = 5;
+        result.SpawnCount = 8;
+
+        result.Spawns[0] = MakeSpawn(EnemyType::Type1, wave4LeftOuter, type1Y);
+        result.Spawns[1] = MakeSpawn(EnemyType::Type1, wave4LeftInner, type1Y);
+        result.Spawns[2] = MakeSpawn(EnemyType::Type1, wave4RightInner, type1Y);
+        result.Spawns[3] = MakeSpawn(EnemyType::Type1, wave4RightOuter, type1Y);
+
+        result.Spawns[4] = MakeSpawn(EnemyType::Type2, wave5Type2Left, type2Y);
+        result.Spawns[5] = MakeSpawn(EnemyType::Type2, wave5Type2Center, type2Y);
+        result.Spawns[6] = MakeSpawn(EnemyType::Type2, wave5Type2Right, type2Y);
+
+        result.Spawns[7] = MakeSpawn(EnemyType::Type3, centerX, type3Y);
+    }
+    else
+    {
+        result.WaveNumber = wave;
+        result.SpawnCount = 9;
+
+        result.Spawns[0] = MakeSpawn(EnemyType::Type1, wave4LeftOuter, type1Y);
+        result.Spawns[1] = MakeSpawn(EnemyType::Type1, wave4LeftInner, type1Y);
+        result.Spawns[2] = MakeSpawn(EnemyType::Type1, wave4RightInner, type1Y);
+        result.Spawns[3] = MakeSpawn(EnemyType::Type1, wave4RightOuter, type1Y);
+
+        result.Spawns[4] = MakeSpawn(EnemyType::Type2, wave6Type2FarLeft, type2Y);
+        result.Spawns[5] = MakeSpawn(EnemyType::Type2, wave6Type2MidLeft, type2Y);
+        result.Spawns[6] = MakeSpawn(EnemyType::Type2, wave6Type2MidRight, type2Y);
+        result.Spawns[7] = MakeSpawn(EnemyType::Type2, wave6Type2FarRight, type2Y);
+
+        result.Spawns[8] = MakeSpawn(EnemyType::Type3, centerX, type3Y);
     }
 
     return result;
