@@ -34,10 +34,8 @@ private:
     float Timer;
     float ShootTimer;
     bool WantsToShoot;
-
     float DiveStartX;
     float DiveStartY;
-
     bool IsBeaming;
     float BeamScale;
     float BeamTimer;
@@ -62,7 +60,6 @@ public:
     void StartDive();
     void TakeDamage();
     int GetHealth() const;
-
     bool GetIsBeaming() const;
     float GetBeamScale() const;
     bool GetIsPlayerCaptured() const;

@@ -8,6 +8,7 @@
 #include "Bullet.h"
 #include "Enemy.h"
 #include "StartupScreen.h"
+#include "WaveData.h"
 
 enum class GameState
 {
@@ -61,8 +62,14 @@ private:
     PlayerBulletSystem PlayerBulletSystemObject;
     EnemyBulletSystem EnemyBulletSystemObject;
 
-    static const int EnemyCount = 3;
+    static const int EnemyCount = WaveMaxEnemies;
     Enemy Enemies[EnemyCount];
+    bool EnemySlotsActive[EnemyCount];
+
+    int CurrentWave;
+    bool IsWaveTransition;
+    float WaveTransitionTimer;
+    float WaveTransitionDelay;
 
 public:
     Game();
@@ -74,7 +81,8 @@ private:
     float GetDeltaTime();
 
     void ResetGame();
-    void SetupEnemies();
+    void SetupEnemiesForWave(int wave);
+    bool AreAllEnemiesDefeated() const;
     void LoseLifeAndStartRespawn();
 
     void Input();

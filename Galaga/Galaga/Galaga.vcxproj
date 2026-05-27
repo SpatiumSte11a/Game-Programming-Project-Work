@@ -131,6 +131,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="StartupScreen.cpp" />
+    <ClCompile Include="WaveData.cpp" />
     <ClCompile Include="WindowContext.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -142,6 +143,7 @@
     <ClInclude Include="GraphicsContext.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="StartupScreen.h" />
+    <ClInclude Include="WaveData.h" />
     <ClInclude Include="WindowContext.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

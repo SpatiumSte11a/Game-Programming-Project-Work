@@ -18,9 +18,18 @@ Game::Game()
     InvincibleTimer(0.0f),
     InvincibleDuration(1.0f),
     GameOverTimer(0.0f),
-    GameOverDelay(10.0f)
+    GameOverDelay(10.0f),
+    CurrentWave(1),
+    IsWaveTransition(false),
+    WaveTransitionTimer(0.0f),
+    WaveTransitionDelay(2.0f)
 {
     PrevTime = std::chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < EnemyCount; i++)
+    {
+        EnemySlotsActive[i] = false;
+    }
 }
 
 bool Game::Initialize(HINSTANCE hInstance)
@@ -38,33 +47,39 @@ bool Game::Initialize(HINSTANCE hInstance)
     return true;
 }
 
-void Game::SetupEnemies()
+void Game::SetupEnemiesForWave(int wave)
 {
-    float enemyX = 0.0f;
-    float visualGap = 0.04f;
+    WaveDefinition waveDef = GetWaveDefinition(wave);
 
-    float squareY = 0.42f;
-    float squareTop = 0.05f;
+    for (int i = 0; i < EnemyCount; i++)
+    {
+        Enemies[i] = Enemy();
+        EnemySlotsActive[i] = false;
+    }
 
-    float downTriangleTop = 0.02f;
-    float downTriangleBottom = 0.08f;
+    for (int i = 0; i < WaveMaxEnemies; i++)
+    {
+        if (!waveDef.Spawns[i].IsUsed)
+            continue;
 
-    float diamondBottom = 0.063f;
+        EnemySlotsActive[i] = true;
+        Enemies[i].SetType(waveDef.Spawns[i].Type);
+        Enemies[i].SetPosition(waveDef.Spawns[i].X, waveDef.Spawns[i].Y);
+    }
+}
 
-    float triangleY = squareY + squareTop + visualGap + downTriangleBottom;
-    float diamondY = triangleY + downTriangleTop + visualGap + diamondBottom;
+bool Game::AreAllEnemiesDefeated() const
+{
+    for (int i = 0; i < EnemyCount; i++)
+    {
+        if (!EnemySlotsActive[i])
+            continue;
 
-    Enemies[0] = Enemy();
-    Enemies[0].SetType(EnemyType::Type1);
-    Enemies[0].SetPosition(enemyX, squareY);
+        if (Enemies[i].GetIsAlive())
+            return false;
+    }
 
-    Enemies[1] = Enemy();
-    Enemies[1].SetType(EnemyType::Type2);
-    Enemies[1].SetPosition(enemyX, triangleY);
-
-    Enemies[2] = Enemy();
-    Enemies[2].SetType(EnemyType::Type3);
-    Enemies[2].SetPosition(enemyX, diamondY);
+    return true;
 }
 
 void Game::ResetGame()
@@ -80,13 +95,17 @@ void Game::ResetGame()
 
     GameOverTimer = 0.0f;
 
+    CurrentWave = 1;
+    IsWaveTransition = false;
+    WaveTransitionTimer = 0.0f;
+
     StartScreen.Reset();
 
     PlayerObject = Player();
     PlayerBulletSystemObject = PlayerBulletSystem();
     EnemyBulletSystemObject = EnemyBulletSystem();
 
-    SetupEnemies();
+    SetupEnemiesForWave(CurrentWave);
 }
 
 void Game::LoseLifeAndStartRespawn()
@@ -227,6 +246,24 @@ void Game::Update(float dt)
     if (CurrentState == GameState::Paused)
         return;
 
+    if (IsWaveTransition)
+    {
+        WaveTransitionTimer -= dt;
+
+        if (WaveTransitionTimer <= 0.0f)
+        {
+            IsWaveTransition = false;
+            CurrentWave++;
+
+            PlayerBulletSystemObject = PlayerBulletSystem();
+            EnemyBulletSystemObject = EnemyBulletSystem();
+
+            SetupEnemiesForWave(CurrentWave);
+        }
+
+        return;
+    }
+
     if (IsRespawning)
     {
         RespawnTimer -= dt;
@@ -253,6 +290,9 @@ void Game::Update(float dt)
     bool isCaptured = false;
     for (int i = 0; i < EnemyCount; i++)
     {
+        if (!EnemySlotsActive[i])
+            continue;
+
         if (Enemies[i].GetIsPlayerCaptured())
         {
             isCaptured = true;
@@ -280,6 +320,9 @@ void Game::Update(float dt)
 
     for (int i = 0; i < EnemyCount; i++)
     {
+        if (!EnemySlotsActive[i])
+            continue;
+
         if (Enemies[i].GetIsPlayerCaptured())
         {
             pX = Enemies[i].GetX() + 0.12f;
@@ -295,6 +338,9 @@ void Game::Update(float dt)
 
     for (int i = 0; i < EnemyCount; i++)
     {
+        if (!EnemySlotsActive[i])
+            continue;
+
         Enemies[i].Update(dt, enemyTargetX, enemyTargetY);
 
         if (Enemies[i].GetIsAlive() && Enemies[i].GetType() == EnemyType::Type2)
@@ -323,6 +369,15 @@ void Game::Update(float dt)
         if (HandleEnemyBulletVsPlayerCollision())
             return;
     }
+
+    if (CurrentState == GameState::Playing && AreAllEnemiesDefeated())
+    {
+        IsWaveTransition = true;
+        WaveTransitionTimer = WaveTransitionDelay;
+
+        PlayerBulletSystemObject = PlayerBulletSystem();
+        EnemyBulletSystemObject = EnemyBulletSystem();
+    }
 }
 
 void Game::HandlePlayerBulletVsEnemyCollision()
@@ -336,6 +391,9 @@ void Game::HandlePlayerBulletVsEnemyCollision()
 
         for (int enemyIndex = 0; enemyIndex < EnemyCount; enemyIndex++)
         {
+            if (!EnemySlotsActive[enemyIndex])
+                continue;
+
             if (!Enemies[enemyIndex].GetIsAlive())
                 continue;
 
@@ -393,6 +451,9 @@ bool Game::HandlePlayerVsEnemyCollision()
 
     for (int enemyIndex = 0; enemyIndex < EnemyCount; enemyIndex++)
     {
+        if (!EnemySlotsActive[enemyIndex])
+            continue;
+
         if (!Enemies[enemyIndex].GetIsAlive())
             continue;
 
@@ -413,6 +474,9 @@ bool Game::HandlePlayerCaptureCollision()
 
     for (int enemyIndex = 0; enemyIndex < EnemyCount; enemyIndex++)
     {
+        if (!EnemySlotsActive[enemyIndex])
+            continue;
+
         if (!Enemies[enemyIndex].GetIsAlive())
             continue;
 
@@ -505,6 +569,9 @@ void Game::Render()
 
     PlayerBulletSystemObject.Render(Graphics);
 
+    Graphics.DrawText("WAVE", -0.92f, 0.92f, 0.35f);
+    Graphics.DrawNumbers(std::to_string(CurrentWave), -0.75f, 0.92f, 0.40f);
+
     Graphics.DrawText("ESC - EXIT", -0.92f, -0.92f, 0.35f);
     Graphics.DrawText("P - PAUSE", -0.48f, -0.92f, 0.35f);
     Graphics.DrawText("R - RESTART", -0.02f, -0.92f, 0.35f);
@@ -512,6 +579,11 @@ void Game::Render()
     if (CurrentState == GameState::GameOverWait)
     {
         Graphics.DrawText("GAME OVER", -0.40f, 0.10f, 1.2f);
+    }
+
+    if (IsWaveTransition)
+    {
+        Graphics.DrawText("WAVE CLEAR", -0.28f, 0.02f, 0.65f);
     }
 
     RenderLives();
@@ -522,6 +594,9 @@ void Game::Render()
 
     for (int i = 0; i < EnemyCount; i++)
     {
+        if (!EnemySlotsActive[i])
+            continue;
+
         if (!Enemies[i].GetIsAlive())
             continue;
 

@@ -72,20 +72,6 @@ void Enemy::UpdateFormation(float dt)
     }
 }
 
-void Enemy::UpdateIdle(float dt)
-{
-    X = FormationX;
-    Y = FormationY;
-
-    Timer += dt;
-
-    float triggerTime = (Type == EnemyType::Type3) ? 8.0f : 6.0f;
-    if (Timer > triggerTime)
-    {
-        StartDive();
-    }
-}
-
 void Enemy::Update(float dt, float playerX, float playerY)
 {
     if (!IsAlive)
@@ -118,6 +104,20 @@ void Enemy::Update(float dt, float playerX, float playerY)
     case EnemyState::Returning:
         UpdateReturn(dt);
         break;
+    }
+}
+
+void Enemy::UpdateIdle(float dt)
+{
+    X = FormationX;
+    Y = FormationY;
+
+    Timer += dt;
+
+    float triggerTime = (Type == EnemyType::Type3) ? 8.0f : 6.0f;
+    if (Timer > triggerTime)
+    {
+        StartDive();
     }
 }
 
@@ -168,8 +168,7 @@ void Enemy::UpdateDive(float dt, float playerX, float playerY)
     }
     else if (Type == EnemyType::Type3)
     {
-        float descentDuration = 1.5f;
-        float t = std::min(Timer / descentDuration, 1.0f);
+        float t = std::min(Timer / 1.5f, 1.0f);
 
         X = DiveStartX * (1.0f - t);
         Y = DiveStartY * (1.0f - t) + 0.0f * t;
@@ -186,6 +185,7 @@ void Enemy::UpdateDive(float dt, float playerX, float playerY)
     }
 
     ShootTimer -= dt;
+
     if (ShootTimer <= 0.0f)
     {
         WantsToShoot = true;
@@ -227,8 +227,8 @@ void Enemy::UpdateBeaming(float dt, float playerX, float playerY)
 void Enemy::UpdateCapturing(float dt)
 {
     Timer += dt;
-
     float t = std::min(Timer / 2.0f, 1.0f);
+
     Y = DiveStartY * (1.0f - t) + FormationY * t;
     X = DiveStartX * (1.0f - t) + FormationX * t;
 
