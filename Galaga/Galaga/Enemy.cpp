@@ -180,9 +180,9 @@ void Enemy::UpdateDive(float dt, float playerX, float playerY)
         float p0x = DiveStartX;
         float p0y = DiveStartY;
         float p1x = DiveStartX + (DiveStartX > 0.0f ? 0.4f : -0.4f);
-        float p1y = -0.2f;
-        float p2x = 0.0f;
-        float p2y = -0.6f;
+        float p1y = -0.1f;
+        float p2x = DiveStartX;
+        float p2y = -0.5f;
 
         X = (1 - t) * (1 - t) * p0x + 2 * (1 - t) * t * p1x + t * t * p2x;
         Y = (1 - t) * (1 - t) * p0y + 2 * (1 - t) * t * p1y + t * t * p2y;
@@ -208,13 +208,14 @@ void Enemy::UpdateDive(float dt, float playerX, float playerY)
     {
         float t = std::min((Timer / 1.5f) * MoveSpeedScale, 1.0f);
 
-        X = DiveStartX * (1.0f - t);
-        Y = DiveStartY * (1.0f - t) + 0.0f * t;
+        float targetY = -0.1f;
+        X = DiveStartX;
+        Y = DiveStartY * (1.0f - t) + targetY * t;
 
         if (t >= 1.0f)
         {
-            X = 0.0f;
-            Y = 0.0f;
+            X = DiveStartX;
+            Y = targetY;
             State = EnemyState::Beaming;
             BeamTimer = 0.0f;
             BeamScale = 0.0f;
@@ -240,9 +241,10 @@ void Enemy::UpdateBeaming(float dt, float playerX, float playerY)
     if (BeamScale < 1.0f)
         BeamScale += dt * 0.5f;
 
-    float beamWidth = 0.15f * BeamScale;
+    float beamWidth = 0.075f;
+    float beamTipY = Y - 0.18f - 0.6f * BeamScale;
 
-    if (fabsf(playerX - X) < beamWidth && playerY < Y)
+    if (fabsf(playerX - X) < beamWidth && beamTipY <= playerY)
     {
         IsPlayerCaptured = true;
         HasCapturedShipVisual = true;
@@ -264,16 +266,32 @@ void Enemy::UpdateBeaming(float dt, float playerX, float playerY)
 
 void Enemy::UpdateCapturing(float dt)
 {
-    Timer += dt;
-    float t = std::min(Timer / 2.0f, 1.0f);
-
-    Y = DiveStartY * (1.0f - t) + FormationY * t;
-    X = DiveStartX * (1.0f - t) + FormationX * t;
-
-    if (t >= 1.0f)
+    if (Y > -1.1f && Timer == 0.0f)
     {
-        State = EnemyState::Idle;
-        Timer = 0.0f;
+        Y -= MoveSpeed * MoveSpeedScale * 2.5f * dt;
+
+        if (Y <= -1.1f)
+        {
+            Y = 1.1f;
+            X = FormationX;
+            Timer = 1.0f;
+            DiveStartX = X;
+            DiveStartY = Y;
+        }
+    }
+    else if (Timer > 0.0f)
+    {
+        float t = std::min((Timer - 1.0f) * 2.0f * MoveSpeedScale, 1.0f);
+        Timer += dt;
+
+        X = DiveStartX * (1.0f - t) + FormationX * t;
+        Y = DiveStartY * (1.0f - t) + FormationY * t;
+
+        if (t >= 1.0f)
+        {
+            State = EnemyState::Idle;
+            Timer = 0.0f;
+        }
     }
 }
 
@@ -281,9 +299,9 @@ void Enemy::UpdateLoop(float dt)
 {
     Timer += dt * 5.0f * MoveSpeedScale;
 
-    float radius = (Type == EnemyType::Type3) ? 0.4f : 0.18f;
-    float centerX = 0.0f;
-    float centerY = (Type == EnemyType::Type3) ? -0.4f : -0.6f - radius;
+    float radius = (Type == EnemyType::Type3) ? 0.6f : 0.18f;
+    float centerX = DiveStartX;
+    float centerY = (Type == EnemyType::Type3) ? -0.7f : -0.5f - radius;
 
     X = centerX + radius * sinf(Timer);
     Y = centerY + radius * cosf(Timer);

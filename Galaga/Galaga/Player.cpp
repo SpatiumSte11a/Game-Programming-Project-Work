@@ -2,7 +2,7 @@
 
 Player::Player()
     : X(0.0f),
-    Y(-0.80f),
+    Y(-0.70f),
     MoveSpeed(0.9f)
 {
 }

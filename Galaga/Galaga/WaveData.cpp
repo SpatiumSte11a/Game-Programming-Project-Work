@@ -17,7 +17,7 @@ WaveDefinition GetWaveDefinition(int wave)
     if (wave > 10)
         wave = 10;
 
-    const float type1Y = 0.20f;
+    const float type1Y = 0.30f;
     const float type2Y = 0.48f;
     const float type3Y = 0.74f;
 
