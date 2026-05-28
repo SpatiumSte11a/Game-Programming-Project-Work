@@ -3,6 +3,7 @@
 #include <wincodec.h>
 #pragma comment(lib, "windowscodecs.lib")
 #include <vector>
+#include "Player.h"
 
 GraphicsContext::GraphicsContext()
     : Device(nullptr),
@@ -24,8 +25,17 @@ GraphicsContext::GraphicsContext()
     TextVertexBuffer(nullptr),
     FontTexture(nullptr),
     NumbersTexture(nullptr),
+    ShipTexture(nullptr),
+    Enemy1Texture(nullptr),
+    Enemy2Texture(nullptr),
+    Enemy3Texture(nullptr),
     SamplerState(nullptr),
     BlendState(nullptr),
+    SpriteVertexShader(nullptr),
+    SpritePixelShader(nullptr),
+    SpriteInputLayout(nullptr),
+    SpriteVertexBuffer(nullptr),
+    SpriteConstantBuffer(nullptr),
     ViewportWidth(0),
     ViewportHeight(0)
 {
@@ -53,12 +63,21 @@ void GraphicsContext::ReleaseAll()
 
     if (FontTexture) { FontTexture->Release(); FontTexture = nullptr; }
     if (NumbersTexture) { NumbersTexture->Release(); NumbersTexture = nullptr; }
+    if (ShipTexture) { ShipTexture->Release(); ShipTexture = nullptr; }
+    if (Enemy1Texture) { Enemy1Texture->Release(); Enemy1Texture = nullptr; }
+    if (Enemy2Texture) { Enemy2Texture->Release(); Enemy2Texture = nullptr; }
+    if (Enemy3Texture) { Enemy3Texture->Release(); Enemy3Texture = nullptr; }
     if (TextVertexBuffer) { TextVertexBuffer->Release(); TextVertexBuffer = nullptr; }
     if (TextVertexShader) { TextVertexShader->Release(); TextVertexShader = nullptr; }
     if (TextPixelShader) { TextPixelShader->Release(); TextPixelShader = nullptr; }
     if (TextInputLayout) { TextInputLayout->Release(); TextInputLayout = nullptr; }
     if (SamplerState) { SamplerState->Release(); SamplerState = nullptr; }
     if (BlendState) { BlendState->Release(); BlendState = nullptr; }
+    if (SpriteConstantBuffer) { SpriteConstantBuffer->Release(); SpriteConstantBuffer = nullptr; }
+    if (SpriteVertexBuffer) { SpriteVertexBuffer->Release();   SpriteVertexBuffer = nullptr; }
+    if (SpriteInputLayout) { SpriteInputLayout->Release();    SpriteInputLayout = nullptr; }
+    if (SpritePixelShader) { SpritePixelShader->Release();    SpritePixelShader = nullptr; }
+    if (SpriteVertexShader) { SpriteVertexShader->Release();   SpriteVertexShader = nullptr; }
 }
 
 bool GraphicsContext::Initialize(HWND hWnd, int width, int height)
@@ -117,6 +136,26 @@ bool GraphicsContext::Initialize(HWND hWnd, int width, int height)
         return false;
 
     if (!LoadTextures())
+        return false;
+
+    if (!CreateSpritePipeline())
+        return false;
+
+    ShipTexture = LoadSprite(L"ship.png");
+    Enemy1Texture = LoadSprite(L"enemy.png");
+    Enemy2Texture = LoadSprite(L"enemy2.png");
+    Enemy3Texture = LoadSprite(L"enemy3.png");
+
+    if (!ShipTexture)
+        return false;
+
+    if (!Enemy1Texture)
+        return false;
+
+    if (!Enemy2Texture)
+        return false;
+
+    if (!Enemy3Texture)
         return false;
 
     return true;
@@ -784,6 +823,204 @@ void GraphicsContext::DrawText(const std::string& text, float startX, float star
 
         x += GLYPH_W;
     }
+}
+
+bool GraphicsContext::CreateSpritePipeline()
+{
+    const char* src = R"(
+cbuffer CB : register(b0)
+{
+    float offsetX;
+    float offsetY;
+    float scaleX;
+    float scaleY;
+};
+
+struct VS_IN  { float3 pos : POSITION; float2 uv : TEXCOORD; };
+struct PS_IN  { float4 pos : SV_POSITION; float2 uv : TEXCOORD; };
+
+PS_IN VSMain(VS_IN v)
+{
+    PS_IN o;
+    o.pos = float4(v.pos.x * scaleX + offsetX,
+                   v.pos.y * scaleY + offsetY,
+                   0.0f, 1.0f);
+    o.uv = v.uv;
+    return o;
+}
+
+Texture2D    tex : register(t0);
+SamplerState smp : register(s0);
+
+float4 PSMain(PS_IN p) : SV_TARGET
+{
+    return tex.Sample(smp, p.uv);
+}
+)";
+
+    ID3DBlob* vsBlob = nullptr;
+    ID3DBlob* psBlob = nullptr;
+    ID3DBlob* errBlob = nullptr;
+
+    D3DCompile(src, strlen(src), nullptr, nullptr, nullptr,
+        "VSMain", "vs_5_0", 0, 0, &vsBlob, &errBlob);
+    if (errBlob) { errBlob->Release(); errBlob = nullptr; }
+
+    D3DCompile(src, strlen(src), nullptr, nullptr, nullptr,
+        "PSMain", "ps_5_0", 0, 0, &psBlob, &errBlob);
+    if (errBlob) { errBlob->Release(); errBlob = nullptr; }
+
+    Device->CreateVertexShader(vsBlob->GetBufferPointer(),
+        vsBlob->GetBufferSize(),
+        nullptr, &SpriteVertexShader);
+
+    Device->CreatePixelShader(psBlob->GetBufferPointer(),
+        psBlob->GetBufferSize(),
+        nullptr, &SpritePixelShader);
+
+    D3D11_INPUT_ELEMENT_DESC layout[] =
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0,
+          D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 12,
+          D3D11_INPUT_PER_VERTEX_DATA, 0 }
+    };
+
+    Device->CreateInputLayout(layout, 2,
+        vsBlob->GetBufferPointer(),
+        vsBlob->GetBufferSize(),
+        &SpriteInputLayout);
+
+    vsBlob->Release();
+    psBlob->Release();
+
+    // Dynamic vertex buffer — 6 verts for one quad
+    D3D11_BUFFER_DESC bd = {};
+    bd.Usage = D3D11_USAGE_DYNAMIC;
+    bd.ByteWidth = sizeof(FontVertex) * 6;
+    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    Device->CreateBuffer(&bd, nullptr, &SpriteVertexBuffer);
+
+    // Constant buffer — reuse same ConstantBuffer struct
+    D3D11_BUFFER_DESC cbd = {};
+    cbd.Usage = D3D11_USAGE_DEFAULT;
+    cbd.ByteWidth = sizeof(ConstantBuffer);
+    cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    Device->CreateBuffer(&cbd, nullptr, &SpriteConstantBuffer);
+
+    return (SpriteVertexShader && SpritePixelShader &&
+        SpriteInputLayout && SpriteVertexBuffer &&
+        SpriteConstantBuffer);
+}
+
+ID3D11ShaderResourceView* GraphicsContext::LoadSprite(const wchar_t* path)
+{
+    IWICImagingFactory* factory = nullptr;
+    HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr,
+        CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
+    if (FAILED(hr)) return nullptr;
+
+    IWICBitmapDecoder* decoder = nullptr;
+    hr = factory->CreateDecoderFromFilename(path, nullptr, GENERIC_READ,
+        WICDecodeMetadataCacheOnLoad, &decoder);
+    if (FAILED(hr))
+    {
+        factory->Release();
+        return nullptr;
+    }
+
+    IWICBitmapFrameDecode* frame = nullptr;
+    hr = decoder->GetFrame(0, &frame);
+    if (FAILED(hr))
+    {
+        decoder->Release();
+        factory->Release();
+        return nullptr;
+    }
+
+    IWICFormatConverter* conv = nullptr;
+    factory->CreateFormatConverter(&conv);
+    conv->Initialize(frame, GUID_WICPixelFormat32bppRGBA,
+        WICBitmapDitherTypeNone, nullptr,
+        0.0, WICBitmapPaletteTypeCustom);
+
+    UINT w = 0, h = 0;
+    conv->GetSize(&w, &h);
+
+    BYTE* pixels = new BYTE[w * h * 4];
+    conv->CopyPixels(nullptr, w * 4, w * h * 4, pixels);
+
+    D3D11_TEXTURE2D_DESC td = {};
+    td.Width = w;
+    td.Height = h;
+    td.MipLevels = 1;
+    td.ArraySize = 1;
+    td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    td.SampleDesc.Count = 1;
+    td.Usage = D3D11_USAGE_IMMUTABLE;
+    td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    D3D11_SUBRESOURCE_DATA sd = { pixels, w * 4, 0 };
+    ID3D11Texture2D* tex = nullptr;
+    ID3D11ShaderResourceView* srv = nullptr;
+
+    Device->CreateTexture2D(&td, &sd, &tex);
+    if (tex)
+    {
+        Device->CreateShaderResourceView(tex, nullptr, &srv);
+        tex->Release();
+    }
+
+    delete[] pixels;
+    conv->Release();
+    frame->Release();
+    decoder->Release();
+    factory->Release();
+
+    return srv;
+}
+
+void GraphicsContext::DrawSprite(ID3D11ShaderResourceView* srv,
+    float x, float y,
+    float scaleX, float scaleY)
+{
+    // Unit quad centered at origin, UV 0..1
+    FontVertex verts[6] =
+    {
+        { -0.5f,  0.5f, 0,  0.0f, 0.0f },
+        {  0.5f,  0.5f, 0,  1.0f, 0.0f },
+        { -0.5f, -0.5f, 0,  0.0f, 1.0f },
+        {  0.5f,  0.5f, 0,  1.0f, 0.0f },
+        {  0.5f, -0.5f, 0,  1.0f, 1.0f },
+        { -0.5f, -0.5f, 0,  0.0f, 1.0f },
+    };
+
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    Context->Map(SpriteVertexBuffer, 0, D3D11_MAP_WRITE_DISCARD,
+        0, &mapped);
+    memcpy(mapped.pData, verts, sizeof(verts));
+    Context->Unmap(SpriteVertexBuffer, 0);
+
+    ConstantBuffer cb = { x, y, scaleX, scaleY };
+    Context->UpdateSubresource(SpriteConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+    float blendFactor[4] = { 0,0,0,0 };
+    Context->OMSetBlendState(BlendState, blendFactor, 0xFFFFFFFF);
+
+    UINT stride = sizeof(FontVertex), offset = 0;
+    Context->IASetInputLayout(SpriteInputLayout);
+    Context->IASetVertexBuffers(0, 1, &SpriteVertexBuffer, &stride, &offset);
+    Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    Context->VSSetShader(SpriteVertexShader, nullptr, 0);
+    Context->PSSetShader(SpritePixelShader, nullptr, 0);
+    Context->VSSetConstantBuffers(0, 1, &SpriteConstantBuffer);
+    Context->PSSetShaderResources(0, 1, &srv);
+    Context->PSSetSamplers(0, 1, &SamplerState);
+    Context->Draw(6, 0);
+
+    // Reset blend state so geometry draws aren't affected
+    Context->OMSetBlendState(nullptr, blendFactor, 0xFFFFFFFF);
 }
 
 void GraphicsContext::EndFrame()

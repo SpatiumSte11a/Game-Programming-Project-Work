@@ -54,8 +54,20 @@ private:
     ID3D11Buffer* TextVertexBuffer;
     ID3D11ShaderResourceView* FontTexture;
     ID3D11ShaderResourceView* NumbersTexture;
+    ID3D11ShaderResourceView* ShipTexture;
+    ID3D11ShaderResourceView* Enemy1Texture;
+    ID3D11ShaderResourceView* Enemy2Texture;
+    ID3D11ShaderResourceView* Enemy3Texture;
     ID3D11SamplerState* SamplerState;
     ID3D11BlendState* BlendState;
+
+
+    ID3D11VertexShader* SpriteVertexShader;
+    ID3D11PixelShader* SpritePixelShader;
+    ID3D11InputLayout* SpriteInputLayout;
+    ID3D11Buffer* SpriteVertexBuffer;
+    ID3D11Buffer* SpriteConstantBuffer;
+
     int ViewportWidth;
     int ViewportHeight;
 
@@ -67,6 +79,12 @@ public:
     GraphicsContext();
     ~GraphicsContext();
 
+    ID3D11ShaderResourceView* LoadSprite(const wchar_t* path);
+    ID3D11ShaderResourceView* GetShipTexture() const { return ShipTexture; }
+    ID3D11ShaderResourceView* GetEnemy1Texture() const { return Enemy1Texture; }
+    ID3D11ShaderResourceView* GetEnemy2Texture() const { return Enemy2Texture; }
+    ID3D11ShaderResourceView* GetEnemy3Texture() const { return Enemy3Texture; }
+
     bool Initialize(HWND hWnd, int width, int height);
 
     void BeginFrame();
@@ -76,6 +94,7 @@ public:
     void DrawDiamond(float offsetX, float offsetY, float scaleX, float scaleY);
     void DrawText(const std::string& text, float x, float y, float scale);
     void DrawNumbers(const std::string& text, float x, float y, float scale);
+    void DrawSprite(ID3D11ShaderResourceView* srv, float x, float y, float scaleX, float scaleY);
     void EndFrame();
 
 private:
@@ -85,5 +104,6 @@ private:
     bool CreateDownTriangle();
     bool CreateQuad();
     bool CreateDiamond();
+    bool CreateSpritePipeline();
     void ReleaseAll();
 };
