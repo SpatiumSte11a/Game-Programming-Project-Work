@@ -34,15 +34,17 @@ private:
     float Timer;
     float ShootTimer;
     bool WantsToShoot;
-
     float DiveStartX;
     float DiveStartY;
-
     bool IsBeaming;
     float BeamScale;
     float BeamTimer;
     bool IsPlayerCaptured;
     bool HasCapturedShipVisual;
+
+    float MoveSpeedScale;
+    float ShootCooldownScale;
+    float AttackDelayScale;
 
 public:
     Enemy();
@@ -50,6 +52,10 @@ public:
     void SetType(EnemyType type);
     void SetPosition(float x, float y);
     void Update(float dt, float playerX = 0.0f, float playerY = 0.0f);
+
+    void SetMoveSpeedScale(float value);
+    void SetShootCooldownScale(float value);
+    void SetAttackDelayScale(float value);
 
     float GetX() const;
     float GetY() const;
@@ -62,7 +68,6 @@ public:
     void StartDive();
     void TakeDamage();
     int GetHealth() const;
-
     bool GetIsBeaming() const;
     float GetBeamScale() const;
     bool GetIsPlayerCaptured() const;
