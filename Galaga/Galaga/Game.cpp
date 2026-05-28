@@ -504,7 +504,7 @@ bool Game::HandlePlayerCaptureCollision()
 void Game::RenderLives()
 {
     const float iconY = 0.88f;
-    const float iconScale = 0.25f;
+    const float iconScale = 0.45f;
     const float spacing = 0.14f;
     const float startX = 0.82f;
 
@@ -529,7 +529,7 @@ void Game::InitStars()
         if (layer == 1) Stars[i].Speed = 0.10f;
         if (layer == 2) Stars[i].Speed = 0.18f;
 
-        Stars[i].Size = 0.012f + (layer * 0.03f);
+        Stars[i].Size = 0.09f + (layer * 0.03f);
     }
 }
 
@@ -574,7 +574,7 @@ void Game::Render()
 
     if (!IsRespawning && CurrentState != GameState::GameOverWait)
     {
-        Graphics.DrawTriangle(PlayerObject.GetX(), PlayerObject.GetY(), 1.0f, 1.0f);
+        PlayerObject.Render(Graphics);
     }
 
     PlayerBulletSystemObject.Render(Graphics);
@@ -627,21 +627,34 @@ void Game::Render()
         switch (Enemies[i].GetType())
         {
         case EnemyType::Type1:
-            Graphics.DrawQuad(Enemies[i].GetX(), Enemies[i].GetY(), 1.0f, 1.0f);
+            Graphics.DrawSprite(
+                Graphics.GetEnemy1Texture(),
+                Enemies[i].GetX(),
+                Enemies[i].GetY(),
+                0.15f,
+                0.15f
+            );
             break;
 
         case EnemyType::Type2:
-            Graphics.DrawDownTriangle(Enemies[i].GetX(), Enemies[i].GetY(), 1.0f, 1.0f);
+            Graphics.DrawSprite(
+                Graphics.GetEnemy2Texture(),
+                Enemies[i].GetX(),
+                Enemies[i].GetY(),
+                0.15f,
+                0.15f
+            );
             break;
 
         case EnemyType::Type3:
-            Graphics.DrawDiamond(Enemies[i].GetX(), Enemies[i].GetY(), 0.9f, 0.9f);
+            Graphics.DrawSprite(
+                Graphics.GetEnemy3Texture(),
+                Enemies[i].GetX(),
+                Enemies[i].GetY(),
+                0.18f,
+                0.18f
+            );
             break;
-        }
-
-        if (Enemies[i].GetHasCapturedShipVisual())
-        {
-            Graphics.DrawDownTriangle(Enemies[i].GetX() + 0.12f, Enemies[i].GetY(), 0.8f, 0.8f);
         }
     }
 

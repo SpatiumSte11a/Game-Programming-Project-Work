@@ -41,3 +41,14 @@ HitBox Player::GetHitBox() const
     box.HalfHeight = 0.05f;
     return box;
 }
+
+void Player::Render(GraphicsContext& graphics)
+{
+    graphics.DrawSprite(
+        graphics.GetShipTexture(),
+        X,
+        Y,
+        0.15f,
+        0.15f
+    );
+}
