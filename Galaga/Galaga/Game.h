@@ -71,6 +71,10 @@ private:
     float WaveTransitionTimer;
     float WaveTransitionDelay;
 
+    bool IsNextWaveSpawnDelay;
+    float NextWaveSpawnDelayTimer;
+    float NextWaveSpawnDelay;
+
 public:
     Game();
 
