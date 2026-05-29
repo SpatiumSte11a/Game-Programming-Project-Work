@@ -1,7 +1,8 @@
 #pragma once
+#include <windows.h>
 #include <chrono>
 #include <string>
-#include <windows.h>
+
 #include "WindowContext.h"
 #include "GraphicsContext.h"
 #include "Player.h"
@@ -41,14 +42,15 @@ private:
 
     float TitleUpdateTimer;
     int FrameCounter;
-
     float GlobalTime;
+
     int PlayerLives;
     int Score;
 
     bool IsRespawning;
     float RespawnTimer;
     float RespawnDelay;
+
     float InvincibleTimer;
     float InvincibleDuration;
 
@@ -66,10 +68,18 @@ private:
     Enemy Enemies[EnemyCount];
     bool EnemySlotsActive[EnemyCount];
 
+    Enemy BonusEnemyObject;
+    bool IsBonusEnemyActive;
+    float BonusEnemySpeed;
+
     int CurrentWave;
     bool IsWaveTransition;
     float WaveTransitionTimer;
     float WaveTransitionDelay;
+
+    bool IsNextWaveSpawnDelay;
+    float NextWaveSpawnDelayTimer;
+    float NextWaveSpawnDelay;
 
 public:
     Game();
@@ -85,9 +95,14 @@ private:
     bool AreAllEnemiesDefeated() const;
     void LoseLifeAndStartRespawn();
 
+    void SpawnBonusEnemy();
+    void UpdateBonusEnemy(float dt);
+    void HandlePlayerBulletVsBonusEnemyCollision();
+
     void Input();
     void Update(float dt);
     void Render();
+
     void RenderLives();
     void RenderStars();
     void InitStars();

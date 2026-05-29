@@ -1,7 +1,7 @@
 #include "Game.h"
 #include "Collision.h"
-#include <cstdlib>
 #include <cmath>
+#include <cstdlib>
 
 Game::Game()
     : Window(L"Galaga"),
@@ -19,10 +19,15 @@ Game::Game()
     InvincibleDuration(1.0f),
     GameOverTimer(0.0f),
     GameOverDelay(10.0f),
+    IsBonusEnemyActive(false),
+    BonusEnemySpeed(0.55f),
     CurrentWave(1),
     IsWaveTransition(false),
     WaveTransitionTimer(0.0f),
-    WaveTransitionDelay(2.0f)
+    WaveTransitionDelay(1.0f),
+    IsNextWaveSpawnDelay(false),
+    NextWaveSpawnDelayTimer(0.0f),
+    NextWaveSpawnDelay(1.0f)
 {
     PrevTime = std::chrono::high_resolution_clock::now();
 
@@ -69,6 +74,7 @@ void Game::SetupEnemiesForWave(int wave)
         if (waveDef.Spawns[i].Type == EnemyType::Type1)
         {
             Enemies[i].SetMoveSpeedScale(waveDef.Type1MoveSpeedScale);
+            Enemies[i].SetAttackDelayScale(waveDef.Type1AttackDelayScale);
         }
         else if (waveDef.Spawns[i].Type == EnemyType::Type2)
         {
@@ -78,6 +84,16 @@ void Game::SetupEnemiesForWave(int wave)
         {
             Enemies[i].SetAttackDelayScale(waveDef.Type3AttackDelayScale);
         }
+    }
+
+    if (wave % 5 == 0)
+    {
+        SpawnBonusEnemy();
+    }
+    else
+    {
+        BonusEnemyObject = Enemy();
+        IsBonusEnemyActive = false;
     }
 }
 
@@ -112,11 +128,17 @@ void Game::ResetGame()
     IsWaveTransition = false;
     WaveTransitionTimer = 0.0f;
 
+    IsNextWaveSpawnDelay = false;
+    NextWaveSpawnDelayTimer = 0.0f;
+
     StartScreen.Reset();
 
     PlayerObject = Player();
     PlayerBulletSystemObject = PlayerBulletSystem();
     EnemyBulletSystemObject = EnemyBulletSystem();
+
+    BonusEnemyObject = Enemy();
+    IsBonusEnemyActive = false;
 
     SetupEnemiesForWave(CurrentWave);
 }
@@ -149,6 +171,72 @@ void Game::LoseLifeAndStartRespawn()
     PlayerObject = Player();
     PlayerBulletSystemObject = PlayerBulletSystem();
     EnemyBulletSystemObject = EnemyBulletSystem();
+}
+
+void Game::SpawnBonusEnemy()
+{
+    float t = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+    float bonusX = -0.85f + t * 1.70f;
+
+    BonusEnemyObject = Enemy();
+    BonusEnemyObject.SetType(EnemyType::Type4);
+    BonusEnemyObject.SetPosition(bonusX, 1.10f);
+    IsBonusEnemyActive = true;
+}
+
+void Game::UpdateBonusEnemy(float dt)
+{
+    if (!IsBonusEnemyActive)
+        return;
+
+    float x = BonusEnemyObject.GetX();
+    float y = BonusEnemyObject.GetY();
+
+    y -= BonusEnemySpeed * dt;
+    BonusEnemyObject.SetPosition(x, y);
+
+    if (y < -1.15f)
+    {
+        BonusEnemyObject = Enemy();
+        IsBonusEnemyActive = false;
+    }
+}
+
+void Game::HandlePlayerBulletVsBonusEnemyCollision()
+{
+    if (!IsBonusEnemyActive)
+        return;
+
+    for (int bulletIndex = 0; bulletIndex < PlayerBulletSystemObject.GetBulletCount(); bulletIndex++)
+    {
+        Bullet& bullet = PlayerBulletSystemObject.GetBullet(bulletIndex);
+
+        if (!bullet.GetIsActive())
+            continue;
+
+        if (CheckHitBoxCollision(bullet.GetHitBox(), BonusEnemyObject.GetHitBox()))
+        {
+            bullet.Deactivate();
+            BonusEnemyObject = Enemy();
+            IsBonusEnemyActive = false;
+
+            if (PlayerLives < 3)
+            {
+                int rewardRoll = rand() % 2;
+
+                if (rewardRoll == 0)
+                    PlayerLives++;
+                else
+                    Score += 1000;
+            }
+            else
+            {
+                Score += 1000;
+            }
+
+            break;
+        }
+    }
 }
 
 float Game::GetDeltaTime()
@@ -184,6 +272,7 @@ void Game::Run()
             if (TitleUpdateTimer >= 0.5f)
             {
                 float fps = FrameCounter / TitleUpdateTimer;
+
                 std::wstring title = L"Galaga | FPS: " + std::to_wstring((int)fps);
                 SetWindowText(Window.hWnd, title.c_str());
 
@@ -259,6 +348,17 @@ void Game::Update(float dt)
     if (CurrentState == GameState::Paused)
         return;
 
+    if (CurrentState == GameState::GameOverWait)
+    {
+        GameOverTimer -= dt;
+
+        if (GameOverTimer <= 0.0f)
+        {
+            ResetGame();
+            return;
+        }
+    }
+
     if (IsWaveTransition)
     {
         WaveTransitionTimer -= dt;
@@ -266,15 +366,24 @@ void Game::Update(float dt)
         if (WaveTransitionTimer <= 0.0f)
         {
             IsWaveTransition = false;
+            IsNextWaveSpawnDelay = true;
+            NextWaveSpawnDelayTimer = NextWaveSpawnDelay;
+        }
+    }
+
+    if (IsNextWaveSpawnDelay)
+    {
+        NextWaveSpawnDelayTimer -= dt;
+
+        if (NextWaveSpawnDelayTimer <= 0.0f)
+        {
+            IsNextWaveSpawnDelay = false;
             CurrentWave++;
 
             PlayerBulletSystemObject = PlayerBulletSystem();
             EnemyBulletSystemObject = EnemyBulletSystem();
-
             SetupEnemiesForWave(CurrentWave);
         }
-
-        return;
     }
 
     if (IsRespawning)
@@ -289,18 +398,8 @@ void Game::Update(float dt)
         }
     }
 
-    if (CurrentState == GameState::GameOverWait)
-    {
-        GameOverTimer -= dt;
-
-        if (GameOverTimer <= 0.0f)
-        {
-            ResetGame();
-            return;
-        }
-    }
-
     bool isCaptured = false;
+
     for (int i = 0; i < EnemyCount; i++)
     {
         if (!EnemySlotsActive[i])
@@ -313,6 +412,8 @@ void Game::Update(float dt)
         }
     }
 
+    bool isInWaveBreak = IsWaveTransition || IsNextWaveSpawnDelay;
+
     bool canControlPlayer =
         CurrentState == GameState::Playing &&
         !IsRespawning &&
@@ -320,7 +421,7 @@ void Game::Update(float dt)
 
     bool moveLeft = canControlPlayer && ((GetAsyncKeyState(VK_LEFT) & 0x8000) || (GetAsyncKeyState('A') & 0x8000));
     bool moveRight = canControlPlayer && ((GetAsyncKeyState(VK_RIGHT) & 0x8000) || (GetAsyncKeyState('D') & 0x8000));
-    bool shootPressed = canControlPlayer && (GetAsyncKeyState(VK_SPACE) & 0x8000);
+    bool shootPressed = canControlPlayer && !isInWaveBreak && (GetAsyncKeyState(VK_SPACE) & 0x8000);
 
     if (!IsRespawning && CurrentState == GameState::Playing)
         PlayerObject.Update(dt, moveLeft, moveRight);
@@ -344,8 +445,15 @@ void Game::Update(float dt)
     }
 
     PlayerBulletSystemObject.Update(dt, shootPressed, pX, pY);
-
     EnemyBulletSystemObject.Update(dt);
+
+    UpdateBonusEnemy(dt);
+    HandlePlayerBulletVsBonusEnemyCollision();
+
+    if (isInWaveBreak)
+    {
+        return;
+    }
 
     for (int i = 0; i < EnemyCount; i++)
     {
@@ -380,11 +488,13 @@ void Game::Update(float dt)
             return;
     }
 
-    if (CurrentState == GameState::Playing && AreAllEnemiesDefeated())
+    if (CurrentState == GameState::Playing &&
+        !IsWaveTransition &&
+        !IsNextWaveSpawnDelay &&
+        AreAllEnemiesDefeated())
     {
         IsWaveTransition = true;
         WaveTransitionTimer = WaveTransitionDelay;
-
         PlayerBulletSystemObject = PlayerBulletSystem();
         EnemyBulletSystemObject = EnemyBulletSystem();
     }
@@ -416,11 +526,23 @@ void Game::HandlePlayerBulletVsEnemyCollision()
                 {
                     switch (Enemies[enemyIndex].GetType())
                     {
-                    case EnemyType::Type1: Score += 100; break;
-                    case EnemyType::Type2: Score += 200; break;
-                    case EnemyType::Type3: Score += 500; break;
+                    case EnemyType::Type1:
+                        Score += 100;
+                        break;
+
+                    case EnemyType::Type2:
+                        Score += 200;
+                        break;
+
+                    case EnemyType::Type3:
+                        Score += 500;
+                        break;
+
+                    case EnemyType::Type4:
+                        break;
                     }
                 }
+
                 break;
             }
         }
@@ -599,7 +721,9 @@ void Game::Render()
     RenderLives();
 
     std::string scoreStr = std::to_string(Score);
-    while (scoreStr.length() < 6) scoreStr = "0" + scoreStr;
+    while (scoreStr.length() < 6)
+        scoreStr = "0" + scoreStr;
+
     Graphics.DrawNumbers(scoreStr, 0.54f, 0.81f, 0.75f);
 
     for (int i = 0; i < EnemyCount; i++)
@@ -618,9 +742,15 @@ void Game::Render()
 
             for (int j = 0; j < 6; j++)
             {
-                float beamStep = (float)j * 0.12f * scale;
-                float beamWidth = 0.3f + (float)j * 0.1f;
-                Graphics.DrawDownTriangle(bX, bY - 0.1f - beamStep, beamWidth * scale, 0.4f * scale);
+                float beamStep = static_cast<float>(j) * 0.12f * scale;
+                float beamWidth = 0.3f + static_cast<float>(j) * 0.1f;
+
+                Graphics.DrawDownTriangle(
+                    bX,
+                    bY - 0.1f - beamStep,
+                    beamWidth * scale,
+                    0.4f * scale
+                );
             }
         }
 
@@ -655,7 +785,21 @@ void Game::Render()
                 0.18f
             );
             break;
+
+        case EnemyType::Type4:
+            break;
         }
+    }
+
+    if (IsBonusEnemyActive)
+    {
+        Graphics.DrawSprite(
+            Graphics.GetBonusStarTexture(),
+            BonusEnemyObject.GetX(),
+            BonusEnemyObject.GetY(),
+            0.12f,
+            0.12f
+        );
     }
 
     EnemyBulletSystemObject.Render(Graphics);

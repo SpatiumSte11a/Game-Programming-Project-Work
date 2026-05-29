@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #define NOMINMAX
 #include <windows.h>
 #include <d3d11.h>
@@ -19,7 +19,7 @@ struct FontVertex
 {
     float x, y, z;
     float u, v;
-}; 
+};
 
 struct ConstantBuffer
 {
@@ -58,9 +58,9 @@ private:
     ID3D11ShaderResourceView* Enemy1Texture;
     ID3D11ShaderResourceView* Enemy2Texture;
     ID3D11ShaderResourceView* Enemy3Texture;
+    ID3D11ShaderResourceView* BonusStarTexture;
     ID3D11SamplerState* SamplerState;
     ID3D11BlendState* BlendState;
-
 
     ID3D11VertexShader* SpriteVertexShader;
     ID3D11PixelShader* SpritePixelShader;
@@ -71,7 +71,7 @@ private:
     int ViewportWidth;
     int ViewportHeight;
 
-    bool CreateTextPipeline(); 
+    bool CreateTextPipeline();
     bool LoadTextures();
     bool CreateBlendState();
 
@@ -84,6 +84,7 @@ public:
     ID3D11ShaderResourceView* GetEnemy1Texture() const { return Enemy1Texture; }
     ID3D11ShaderResourceView* GetEnemy2Texture() const { return Enemy2Texture; }
     ID3D11ShaderResourceView* GetEnemy3Texture() const { return Enemy3Texture; }
+    ID3D11ShaderResourceView* GetBonusStarTexture() const { return BonusStarTexture; }
 
     bool Initialize(HWND hWnd, int width, int height);
 

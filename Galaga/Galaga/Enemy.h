@@ -5,7 +5,8 @@ enum class EnemyType
 {
     Type1,
     Type2,
-    Type3
+    Type3,
+    Type4
 };
 
 enum class EnemyState
@@ -41,7 +42,6 @@ private:
     float BeamTimer;
     bool IsPlayerCaptured;
     bool HasCapturedShipVisual;
-
     float MoveSpeedScale;
     float ShootCooldownScale;
     float AttackDelayScale;
@@ -61,13 +61,15 @@ public:
     float GetY() const;
     bool GetIsAlive() const;
     EnemyType GetType() const;
+
     bool GetWantsToShoot() const;
     void ClearWantsToShoot();
-    float GetRadius() const;
 
+    float GetRadius() const;
     void StartDive();
     void TakeDamage();
     int GetHealth() const;
+
     bool GetIsBeaming() const;
     float GetBeamScale() const;
     bool GetIsPlayerCaptured() const;

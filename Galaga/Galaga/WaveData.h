@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Enemy.h"
 
 static const int WaveMaxEnemies = 9;
@@ -19,6 +20,7 @@ struct WaveDefinition
 
     float Type2ShootCooldownScale = 1.0f;
     float Type1MoveSpeedScale = 1.0f;
+    float Type1AttackDelayScale = 1.0f;
     float Type3AttackDelayScale = 1.0f;
 };
 

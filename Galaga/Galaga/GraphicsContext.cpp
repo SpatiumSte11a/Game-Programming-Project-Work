@@ -1,4 +1,4 @@
-#include "GraphicsContext.h"
+ï»¿#include "GraphicsContext.h"
 #include <cstring>
 #include <wincodec.h>
 #pragma comment(lib, "windowscodecs.lib")
@@ -29,6 +29,7 @@ GraphicsContext::GraphicsContext()
     Enemy1Texture(nullptr),
     Enemy2Texture(nullptr),
     Enemy3Texture(nullptr),
+    BonusStarTexture(nullptr),
     SamplerState(nullptr),
     BlendState(nullptr),
     SpriteVertexShader(nullptr),
@@ -67,6 +68,7 @@ void GraphicsContext::ReleaseAll()
     if (Enemy1Texture) { Enemy1Texture->Release(); Enemy1Texture = nullptr; }
     if (Enemy2Texture) { Enemy2Texture->Release(); Enemy2Texture = nullptr; }
     if (Enemy3Texture) { Enemy3Texture->Release(); Enemy3Texture = nullptr; }
+    if (BonusStarTexture) { BonusStarTexture->Release(); BonusStarTexture = nullptr; }
     if (TextVertexBuffer) { TextVertexBuffer->Release(); TextVertexBuffer = nullptr; }
     if (TextVertexShader) { TextVertexShader->Release(); TextVertexShader = nullptr; }
     if (TextPixelShader) { TextPixelShader->Release(); TextPixelShader = nullptr; }
@@ -145,6 +147,7 @@ bool GraphicsContext::Initialize(HWND hWnd, int width, int height)
     Enemy1Texture = LoadSprite(L"enemy.png");
     Enemy2Texture = LoadSprite(L"enemy2.png");
     Enemy3Texture = LoadSprite(L"enemy3.png");
+    BonusStarTexture = LoadSprite(L"bonus_star.png");
 
     if (!ShipTexture)
         return false;
@@ -156,6 +159,9 @@ bool GraphicsContext::Initialize(HWND hWnd, int width, int height)
         return false;
 
     if (!Enemy3Texture)
+        return false;
+
+    if (!BonusStarTexture)
         return false;
 
     return true;
@@ -221,7 +227,7 @@ float4 PSMain(PS_INPUT i) : SV_TARGET
         "VSMain", "vs_5_0", 0, 0, &vsBlob, &errBlob);
     if (FAILED(hr))
     {
-        if (errBlob) { OutputDebugStringA((char*)errBlob->GetBufferPointer()); errBlob->Release(); }
+        if (errBlob) { OutputDebugStringA((char*)errBlob->GetBufferPointer()); errBlob->Release(); errBlob = nullptr; }
         return false;
     }
 
@@ -230,7 +236,7 @@ float4 PSMain(PS_INPUT i) : SV_TARGET
     if (FAILED(hr))
     {
         vsBlob->Release();
-        if (errBlob) { OutputDebugStringA((char*)errBlob->GetBufferPointer()); errBlob->Release(); }
+        if (errBlob) { OutputDebugStringA((char*)errBlob->GetBufferPointer()); errBlob->Release(); errBlob = nullptr; }
         return false;
     }
 
@@ -292,7 +298,7 @@ bool GraphicsContext::LoadTextures()
         hr = Device->CreateShaderResourceView(tex, nullptr, srv);
         tex->Release();
         return SUCCEEDED(hr);
-    };
+        };
 
     if (!LoadTex(L"font.png", &FontTexture)) { factory->Release(); return false; }
     if (!LoadTex(L"numbers.png", &NumbersTexture)) { factory->Release(); return false; }
@@ -334,7 +340,7 @@ void GraphicsContext::DrawNumbers(const std::string& text, float startX, float s
         if (c < '0' || c > '9') continue;
 
         int digit = c - '0';
-        int idx = (digit == 0) ? 9 : (digit - 1); // 1-9 are at indices 0-8, 0 is at index 9
+        int idx = (digit == 0) ? 9 : (digit - 1);
         float u0 = idx * CELL_W;
         float u1 = (idx + 1) * CELL_W;
         float v0 = 0.0f;
@@ -758,10 +764,9 @@ void GraphicsContext::DrawDiamond(float offsetX, float offsetY, float scaleX, fl
 
 void GraphicsContext::DrawText(const std::string& text, float startX, float startY, float scale)
 {
-
     const int   COLS = 13;
-    const float CELL_W = 1.0f / COLS;        // 0.07692 UV units per cell
-    const float CELL_H = 1.0f / 2.0f;        // 0.5 UV units per row
+    const float CELL_W = 1.0f / COLS;
+    const float CELL_H = 1.0f / 2.0f;
 
     const float INS_X0 = 0.0024f;
     const float INS_X1 = 0.0030f;
@@ -894,7 +899,6 @@ float4 PSMain(PS_IN p) : SV_TARGET
     vsBlob->Release();
     psBlob->Release();
 
-    // Dynamic vertex buffer — 6 verts for one quad
     D3D11_BUFFER_DESC bd = {};
     bd.Usage = D3D11_USAGE_DYNAMIC;
     bd.ByteWidth = sizeof(FontVertex) * 6;
@@ -902,7 +906,6 @@ float4 PSMain(PS_IN p) : SV_TARGET
     bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     Device->CreateBuffer(&bd, nullptr, &SpriteVertexBuffer);
 
-    // Constant buffer — reuse same ConstantBuffer struct
     D3D11_BUFFER_DESC cbd = {};
     cbd.Usage = D3D11_USAGE_DEFAULT;
     cbd.ByteWidth = sizeof(ConstantBuffer);
@@ -985,7 +988,6 @@ void GraphicsContext::DrawSprite(ID3D11ShaderResourceView* srv,
     float x, float y,
     float scaleX, float scaleY)
 {
-    // Unit quad centered at origin, UV 0..1
     FontVertex verts[6] =
     {
         { -0.5f,  0.5f, 0,  0.0f, 0.0f },
@@ -1019,7 +1021,6 @@ void GraphicsContext::DrawSprite(ID3D11ShaderResourceView* srv,
     Context->PSSetSamplers(0, 1, &SamplerState);
     Context->Draw(6, 0);
 
-    // Reset blend state so geometry draws aren't affected
     Context->OMSetBlendState(nullptr, blendFactor, 0xFFFFFFFF);
 }
 

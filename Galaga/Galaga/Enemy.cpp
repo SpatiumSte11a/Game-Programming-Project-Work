@@ -1,6 +1,6 @@
 #include "Enemy.h"
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 
 Enemy::Enemy()
@@ -46,6 +46,11 @@ void Enemy::SetType(EnemyType type)
     case EnemyType::Type3:
         MoveSpeed = 0.35f;
         Health = 2;
+        break;
+
+    case EnemyType::Type4:
+        MoveSpeed = 0.35f;
+        Health = 1;
         break;
     }
 }
@@ -153,6 +158,7 @@ void Enemy::UpdateIdle(float dt)
     }
 
     float triggerTime = (Type == EnemyType::Type3 ? 8.0f : 6.0f) * AttackDelayScale;
+
     if (Timer > triggerTime)
     {
         StartDive();
@@ -179,8 +185,10 @@ void Enemy::UpdateDive(float dt, float playerX, float playerY)
 
         float p0x = DiveStartX;
         float p0y = DiveStartY;
+
         float p1x = DiveStartX + (DiveStartX > 0.0f ? 0.4f : -0.4f);
         float p1y = -0.1f;
+
         float p2x = DiveStartX;
         float p2y = -0.5f;
 
@@ -207,8 +215,8 @@ void Enemy::UpdateDive(float dt, float playerX, float playerY)
     else if (Type == EnemyType::Type3)
     {
         float t = std::min((Timer / 1.5f) * MoveSpeedScale, 1.0f);
-
         float targetY = -0.1f;
+
         X = DiveStartX;
         Y = DiveStartY * (1.0f - t) + targetY * t;
 
@@ -228,6 +236,7 @@ void Enemy::UpdateDive(float dt, float playerX, float playerY)
     if (ShootTimer <= 0.0f)
     {
         WantsToShoot = true;
+
         float cooldown = (Type == EnemyType::Type2) ? 0.8f : 1.5f;
         ShootTimer = (cooldown + (static_cast<float>(rand()) / RAND_MAX) * 1.0f) * ShootCooldownScale;
     }
@@ -396,7 +405,13 @@ void Enemy::ClearWantsToShoot()
 
 float Enemy::GetRadius() const
 {
-    return (Type == EnemyType::Type3) ? 0.09f : 0.06f;
+    if (Type == EnemyType::Type3)
+        return 0.09f;
+
+    if (Type == EnemyType::Type4)
+        return 0.07f;
+
+    return 0.06f;
 }
 
 int Enemy::GetHealth() const
@@ -450,6 +465,11 @@ HitBox Enemy::GetHitBox() const
     case EnemyType::Type3:
         box.HalfWidth = 0.045f;
         box.HalfHeight = 0.063f;
+        break;
+
+    case EnemyType::Type4:
+        box.HalfWidth = 0.055f;
+        box.HalfHeight = 0.055f;
         break;
     }
 
