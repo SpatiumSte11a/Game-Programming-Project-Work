@@ -19,6 +19,8 @@ Game::Game()
     InvincibleDuration(1.0f),
     GameOverTimer(0.0f),
     GameOverDelay(10.0f),
+    IsBonusEnemyActive(false),
+    BonusEnemySpeed(0.55f),
     CurrentWave(1),
     IsWaveTransition(false),
     WaveTransitionTimer(0.0f),
@@ -83,6 +85,8 @@ void Game::SetupEnemiesForWave(int wave)
             Enemies[i].SetAttackDelayScale(waveDef.Type3AttackDelayScale);
         }
     }
+
+    SpawnBonusEnemy();
 }
 
 bool Game::AreAllEnemiesDefeated() const
@@ -125,6 +129,9 @@ void Game::ResetGame()
     PlayerBulletSystemObject = PlayerBulletSystem();
     EnemyBulletSystemObject = EnemyBulletSystem();
 
+    BonusEnemyObject = Enemy();
+    IsBonusEnemyActive = false;
+
     SetupEnemiesForWave(CurrentWave);
 }
 
@@ -156,6 +163,72 @@ void Game::LoseLifeAndStartRespawn()
     PlayerObject = Player();
     PlayerBulletSystemObject = PlayerBulletSystem();
     EnemyBulletSystemObject = EnemyBulletSystem();
+}
+
+void Game::SpawnBonusEnemy()
+{
+    float t = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+    float bonusX = -0.85f + t * 1.70f;
+
+    BonusEnemyObject = Enemy();
+    BonusEnemyObject.SetType(EnemyType::Type4);
+    BonusEnemyObject.SetPosition(bonusX, 1.10f);
+    IsBonusEnemyActive = true;
+}
+
+void Game::UpdateBonusEnemy(float dt)
+{
+    if (!IsBonusEnemyActive)
+        return;
+
+    float x = BonusEnemyObject.GetX();
+    float y = BonusEnemyObject.GetY();
+
+    y -= BonusEnemySpeed * dt;
+    BonusEnemyObject.SetPosition(x, y);
+
+    if (y < -1.15f)
+    {
+        BonusEnemyObject = Enemy();
+        IsBonusEnemyActive = false;
+    }
+}
+
+void Game::HandlePlayerBulletVsBonusEnemyCollision()
+{
+    if (!IsBonusEnemyActive)
+        return;
+
+    for (int bulletIndex = 0; bulletIndex < PlayerBulletSystemObject.GetBulletCount(); bulletIndex++)
+    {
+        Bullet& bullet = PlayerBulletSystemObject.GetBullet(bulletIndex);
+
+        if (!bullet.GetIsActive())
+            continue;
+
+        if (CheckHitBoxCollision(bullet.GetHitBox(), BonusEnemyObject.GetHitBox()))
+        {
+            bullet.Deactivate();
+            BonusEnemyObject = Enemy();
+            IsBonusEnemyActive = false;
+
+            if (PlayerLives < 3)
+            {
+                int rewardRoll = rand() % 2;
+
+                if (rewardRoll == 0)
+                    PlayerLives++;
+                else
+                    Score += 1000;
+            }
+            else
+            {
+                Score += 1000;
+            }
+
+            break;
+        }
+    }
 }
 
 float Game::GetDeltaTime()
@@ -366,6 +439,9 @@ void Game::Update(float dt)
     PlayerBulletSystemObject.Update(dt, shootPressed, pX, pY);
     EnemyBulletSystemObject.Update(dt);
 
+    UpdateBonusEnemy(dt);
+    HandlePlayerBulletVsBonusEnemyCollision();
+
     if (isInWaveBreak)
     {
         return;
@@ -452,6 +528,9 @@ void Game::HandlePlayerBulletVsEnemyCollision()
 
                     case EnemyType::Type3:
                         Score += 500;
+                        break;
+
+                    case EnemyType::Type4:
                         break;
                     }
                 }
@@ -655,8 +734,8 @@ void Game::Render()
 
             for (int j = 0; j < 6; j++)
             {
-                float beamStep = (float)j * 0.12f * scale;
-                float beamWidth = 0.3f + (float)j * 0.1f;
+                float beamStep = static_cast<float>(j) * 0.12f * scale;
+                float beamWidth = 0.3f + static_cast<float>(j) * 0.1f;
 
                 Graphics.DrawDownTriangle(
                     bX,
@@ -698,7 +777,21 @@ void Game::Render()
                 0.18f
             );
             break;
+
+        case EnemyType::Type4:
+            break;
         }
+    }
+
+    if (IsBonusEnemyActive)
+    {
+        Graphics.DrawSprite(
+            Graphics.GetBonusStarTexture(),
+            BonusEnemyObject.GetX(),
+            BonusEnemyObject.GetY(),
+            0.12f,
+            0.12f
+        );
     }
 
     EnemyBulletSystemObject.Render(Graphics);
