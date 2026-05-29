@@ -86,7 +86,15 @@ void Game::SetupEnemiesForWave(int wave)
         }
     }
 
-    SpawnBonusEnemy();
+    if (wave % 5 == 0)
+    {
+        SpawnBonusEnemy();
+    }
+    else
+    {
+        BonusEnemyObject = Enemy();
+        IsBonusEnemyActive = false;
+    }
 }
 
 bool Game::AreAllEnemiesDefeated() const
