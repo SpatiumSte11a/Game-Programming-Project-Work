@@ -59,8 +59,8 @@ HitBox Bullet::GetHitBox() const
 }
 
 PlayerBulletSystem::PlayerBulletSystem()
-    : BulletSpeed(1.5f),
-    FireCooldown(0.18f),
+    : BulletSpeed(1.0f),
+    FireCooldown(0.35f),
     FireTimer(0.0f)
 {
 }

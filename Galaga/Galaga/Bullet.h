@@ -27,7 +27,7 @@ public:
 class PlayerBulletSystem
 {
 private:
-    static const int MaxBullets = 12;
+    static const int MaxBullets = 8;
     Bullet Bullets[MaxBullets];
 
     float BulletSpeed;
