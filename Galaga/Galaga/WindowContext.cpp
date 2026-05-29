@@ -34,16 +34,32 @@ bool WindowContext::Initialize(HINSTANCE hInst, int width, int height)
     if (!RegisterClassEx(&wc))
         return false;
 
+    const DWORD windowStyle =
+        WS_OVERLAPPED   |
+        WS_CAPTION      |
+        WS_SYSMENU      |
+        WS_MINIMIZEBOX;
+
     RECT rc = { 0, 0, Width, Height };
-    AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+    AdjustWindowRect(&rc, windowStyle, FALSE);
+
+    int windowWidth = rc.right - rc.left;
+    int windowHeight = rc.bottom - rc.top;
+
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+    int windowX = (screenWidth - windowWidth) / 2;
+    int windowY = (screenHeight - windowHeight) / 2;
 
     hWnd = CreateWindow(
         L"GalagaWindowClass",
         WindowName,
-        WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT,
-        rc.right - rc.left,
-        rc.bottom - rc.top,
+        windowStyle,
+        windowX,
+        windowY,
+        windowWidth,
+        windowHeight,
         nullptr,
         nullptr,
         hInst,
