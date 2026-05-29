@@ -72,6 +72,7 @@ void Game::SetupEnemiesForWave(int wave)
         if (waveDef.Spawns[i].Type == EnemyType::Type1)
         {
             Enemies[i].SetMoveSpeedScale(waveDef.Type1MoveSpeedScale);
+            Enemies[i].SetAttackDelayScale(waveDef.Type1AttackDelayScale);
         }
         else if (waveDef.Spawns[i].Type == EnemyType::Type2)
         {

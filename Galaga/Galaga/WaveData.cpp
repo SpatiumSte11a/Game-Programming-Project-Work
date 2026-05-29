@@ -12,10 +12,20 @@ static EnemySpawnData MakeSpawn(EnemyType type, float x, float y)
 
 WaveDefinition GetWaveDefinition(int wave)
 {
-    WaveDefinition result;
+    WaveDefinition result{};
 
-    if (wave > 10)
-        wave = 10;
+    result.WaveNumber = wave;
+    result.SpawnCount = 0;
+    result.Type2ShootCooldownScale = 1.0f;
+    result.Type1MoveSpeedScale = 1.0f;
+    result.Type1AttackDelayScale = 1.0f;
+    result.Type3AttackDelayScale = 1.0f;
+
+    int originalWave = wave;
+    int layoutWave = wave;
+
+    if (layoutWave > 10)
+        layoutWave = 10;
 
     const float type1Y = 0.30f;
     const float type2Y = 0.48f;
@@ -42,18 +52,18 @@ WaveDefinition GetWaveDefinition(int wave)
     const float wave6Type2MidRight = 0.25f;
     const float wave6Type2FarRight = 0.75f;
 
-    if (wave == 1)
+    if (layoutWave == 1)
     {
-        result.WaveNumber = 1;
+        result.WaveNumber = originalWave;
         result.SpawnCount = 3;
 
         result.Spawns[0] = MakeSpawn(EnemyType::Type1, leftX, type1Y);
         result.Spawns[1] = MakeSpawn(EnemyType::Type1, centerX, type1Y);
         result.Spawns[2] = MakeSpawn(EnemyType::Type1, rightX, type1Y);
     }
-    else if (wave == 2)
+    else if (layoutWave == 2)
     {
-        result.WaveNumber = 2;
+        result.WaveNumber = originalWave;
         result.SpawnCount = 5;
 
         result.Spawns[0] = MakeSpawn(EnemyType::Type1, leftX, type1Y);
@@ -63,9 +73,9 @@ WaveDefinition GetWaveDefinition(int wave)
         result.Spawns[3] = MakeSpawn(EnemyType::Type2, gapLeftX, type2Y);
         result.Spawns[4] = MakeSpawn(EnemyType::Type2, gapRightX, type2Y);
     }
-    else if (wave == 3)
+    else if (layoutWave == 3)
     {
-        result.WaveNumber = 3;
+        result.WaveNumber = originalWave;
         result.SpawnCount = 6;
 
         result.Spawns[0] = MakeSpawn(EnemyType::Type1, leftX, type1Y);
@@ -77,9 +87,9 @@ WaveDefinition GetWaveDefinition(int wave)
 
         result.Spawns[5] = MakeSpawn(EnemyType::Type3, centerX, type3Y);
     }
-    else if (wave == 4)
+    else if (layoutWave == 4)
     {
-        result.WaveNumber = 4;
+        result.WaveNumber = originalWave;
         result.SpawnCount = 7;
 
         result.Spawns[0] = MakeSpawn(EnemyType::Type1, wave4LeftOuter, type1Y);
@@ -92,9 +102,9 @@ WaveDefinition GetWaveDefinition(int wave)
 
         result.Spawns[6] = MakeSpawn(EnemyType::Type3, centerX, type3Y);
     }
-    else if (wave == 5)
+    else if (layoutWave == 5)
     {
-        result.WaveNumber = 5;
+        result.WaveNumber = originalWave;
         result.SpawnCount = 8;
 
         result.Spawns[0] = MakeSpawn(EnemyType::Type1, wave4LeftOuter, type1Y);
@@ -110,7 +120,7 @@ WaveDefinition GetWaveDefinition(int wave)
     }
     else
     {
-        result.WaveNumber = wave;
+        result.WaveNumber = originalWave;
         result.SpawnCount = 9;
 
         result.Spawns[0] = MakeSpawn(EnemyType::Type1, wave4LeftOuter, type1Y);
@@ -126,26 +136,52 @@ WaveDefinition GetWaveDefinition(int wave)
         result.Spawns[8] = MakeSpawn(EnemyType::Type3, centerX, type3Y);
     }
 
-    if (wave == 7)
+    if (layoutWave == 7)
     {
         result.Type2ShootCooldownScale = 0.75f;
     }
-    else if (wave == 8)
+    else if (layoutWave == 8)
     {
         result.Type2ShootCooldownScale = 0.75f;
         result.Type1MoveSpeedScale = 1.20f;
     }
-    else if (wave == 9)
+    else if (layoutWave == 9)
     {
         result.Type2ShootCooldownScale = 0.75f;
         result.Type1MoveSpeedScale = 1.20f;
+        result.Type1AttackDelayScale = 0.90f;
         result.Type3AttackDelayScale = 0.75f;
     }
-    else if (wave >= 10)
+    else if (layoutWave >= 10)
     {
         result.Type2ShootCooldownScale = 0.65f;
         result.Type1MoveSpeedScale = 1.35f;
+        result.Type1AttackDelayScale = 0.75f;
         result.Type3AttackDelayScale = 0.60f;
+    }
+
+    if (originalWave > 10)
+    {
+        int extraTier = (originalWave - 10) / 2;
+
+        if (extraTier > 6)
+            extraTier = 6;
+
+        result.Type1MoveSpeedScale += 0.05f * extraTier;
+        if (result.Type1MoveSpeedScale > 1.65f)
+            result.Type1MoveSpeedScale = 1.65f;
+
+        result.Type1AttackDelayScale -= 0.02f * extraTier;
+        if (result.Type1AttackDelayScale < 0.65f)
+            result.Type1AttackDelayScale = 0.65f;
+
+        result.Type2ShootCooldownScale -= 0.025f * extraTier;
+        if (result.Type2ShootCooldownScale < 0.50f)
+            result.Type2ShootCooldownScale = 0.50f;
+
+        result.Type3AttackDelayScale -= 0.025f * extraTier;
+        if (result.Type3AttackDelayScale < 0.45f)
+            result.Type3AttackDelayScale = 0.45f;
     }
 
     return result;
