@@ -95,7 +95,7 @@ void PlayerBulletSystem::Render(GraphicsContext& graphics) const
     {
         if (Bullets[i].GetIsActive())
         {
-            graphics.DrawTriangle(Bullets[i].GetX(), Bullets[i].GetY(), 0.18f, 0.35f);
+            graphics.DrawTriangle(Bullets[i].GetX(), Bullets[i].GetY(), 0.18f, 0.35f, 0.5f, 0.5f, 0.5f, 1.0f);
         }
     }
 }
@@ -148,7 +148,7 @@ void EnemyBulletSystem::Render(GraphicsContext& graphics) const
     {
         if (Bullets[i].GetIsActive())
         {
-            graphics.DrawQuad(Bullets[i].GetX(), Bullets[i].GetY(), 0.22f, 0.22f);
+            graphics.DrawQuad(Bullets[i].GetX(), Bullets[i].GetY(), 0.22f, 0.22f, 1.0f, 0.0f, 0.0f, 1.0f);
         }
     }
 }

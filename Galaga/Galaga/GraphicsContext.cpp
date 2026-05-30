@@ -1,4 +1,4 @@
-﻿#include "GraphicsContext.h"
+#include "GraphicsContext.h"
 #include <cstring>
 #include <wincodec.h>
 #pragma comment(lib, "windowscodecs.lib")
@@ -379,6 +379,7 @@ cbuffer ConstantBuffer : register(b0)
     float offsetY;
     float scaleX;
     float scaleY;
+    float4 tintColor;
 };
 
 struct VS_INPUT
@@ -404,7 +405,7 @@ PS_INPUT VSMain(VS_INPUT input)
     finalPos.y += offsetY;
 
     output.pos = float4(finalPos, 1.0f);
-    output.col = input.col;
+    output.col = input.col * tintColor;
     return output;
 }
 
@@ -666,13 +667,17 @@ void GraphicsContext::BeginFrame()
     Context->RSSetViewports(1, &vp);
 }
 
-void GraphicsContext::DrawTriangle(float offsetX, float offsetY, float scaleX, float scaleY)
+void GraphicsContext::DrawTriangle(float offsetX, float offsetY, float scaleX, float scaleY, float r, float g, float b, float a)
 {
     ConstantBuffer cb = {};
     cb.offsetX = offsetX;
     cb.offsetY = offsetY;
     cb.scaleX = scaleX;
     cb.scaleY = scaleY;
+    cb.tintR = r;
+    cb.tintG = g;
+    cb.tintB = b;
+    cb.tintA = a;
 
     Context->UpdateSubresource(ConstantBufferGPU, 0, nullptr, &cb, 0, 0);
 
@@ -690,13 +695,17 @@ void GraphicsContext::DrawTriangle(float offsetX, float offsetY, float scaleX, f
     Context->Draw(3, 0);
 }
 
-void GraphicsContext::DrawDownTriangle(float offsetX, float offsetY, float scaleX, float scaleY)
+void GraphicsContext::DrawDownTriangle(float offsetX, float offsetY, float scaleX, float scaleY, float r, float g, float b, float a)
 {
     ConstantBuffer cb = {};
     cb.offsetX = offsetX;
     cb.offsetY = offsetY;
     cb.scaleX = scaleX;
     cb.scaleY = scaleY;
+    cb.tintR = r;
+    cb.tintG = g;
+    cb.tintB = b;
+    cb.tintA = a;
 
     Context->UpdateSubresource(ConstantBufferGPU, 0, nullptr, &cb, 0, 0);
 
@@ -714,13 +723,17 @@ void GraphicsContext::DrawDownTriangle(float offsetX, float offsetY, float scale
     Context->Draw(3, 0);
 }
 
-void GraphicsContext::DrawQuad(float offsetX, float offsetY, float scaleX, float scaleY)
+void GraphicsContext::DrawQuad(float offsetX, float offsetY, float scaleX, float scaleY, float r, float g, float b, float a)
 {
     ConstantBuffer cb = {};
     cb.offsetX = offsetX;
     cb.offsetY = offsetY;
     cb.scaleX = scaleX;
     cb.scaleY = scaleY;
+    cb.tintR = r;
+    cb.tintG = g;
+    cb.tintB = b;
+    cb.tintA = a;
 
     Context->UpdateSubresource(ConstantBufferGPU, 0, nullptr, &cb, 0, 0);
 
@@ -738,13 +751,17 @@ void GraphicsContext::DrawQuad(float offsetX, float offsetY, float scaleX, float
     Context->Draw(6, 0);
 }
 
-void GraphicsContext::DrawDiamond(float offsetX, float offsetY, float scaleX, float scaleY)
+void GraphicsContext::DrawDiamond(float offsetX, float offsetY, float scaleX, float scaleY, float r, float g, float b, float a)
 {
     ConstantBuffer cb = {};
     cb.offsetX = offsetX;
     cb.offsetY = offsetY;
     cb.scaleX = scaleX;
     cb.scaleY = scaleY;
+    cb.tintR = r;
+    cb.tintG = g;
+    cb.tintB = b;
+    cb.tintA = a;
 
     Context->UpdateSubresource(ConstantBufferGPU, 0, nullptr, &cb, 0, 0);
 
@@ -1004,7 +1021,15 @@ void GraphicsContext::DrawSprite(ID3D11ShaderResourceView* srv,
     memcpy(mapped.pData, verts, sizeof(verts));
     Context->Unmap(SpriteVertexBuffer, 0);
 
-    ConstantBuffer cb = { x, y, scaleX, scaleY };
+    ConstantBuffer cb = {};
+    cb.offsetX = x;
+    cb.offsetY = y;
+    cb.scaleX = scaleX;
+    cb.scaleY = scaleY;
+    cb.tintR = 1.0f;
+    cb.tintG = 1.0f;
+    cb.tintB = 1.0f;
+    cb.tintA = 1.0f;
     Context->UpdateSubresource(SpriteConstantBuffer, 0, nullptr, &cb, 0, 0);
 
     float blendFactor[4] = { 0,0,0,0 };
