@@ -637,15 +637,31 @@ bool Game::HandlePlayerCaptureCollision()
 
 void Game::RenderLives()
 {
-    const float iconY = 0.88f;
-    const float iconScale = 0.45f;
-    const float spacing = 0.14f;
-    const float startX = 0.82f;
+    const float scoreStartX = 0.54f;
+    const float scoreScale = 0.75f;
+    const float scoreDigitWidth = 0.06f * scoreScale;
+    const float scoreWidth = scoreDigitWidth * 6.0f;
+    const float scoreCenterX = scoreStartX + scoreWidth * 0.5f;
+
+    const int maxLives = 3;
+
+    const float iconY = 0.90f;
+    const float iconScale = 0.095f;
+    const float spacing = 0.115f;
+
+    float firstX = scoreCenterX - spacing * (maxLives - 1) * 0.5f;
 
     for (int i = 0; i < PlayerLives; ++i)
     {
-        float x = startX - i * spacing;
-        Graphics.DrawTriangle(x, iconY, iconScale, iconScale);
+        float x = firstX + i * spacing;
+
+        Graphics.DrawSprite(
+            Graphics.GetShipTexture(),
+            x,
+            iconY,
+            iconScale,
+            iconScale
+        );
     }
 }
 
