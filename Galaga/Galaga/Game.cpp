@@ -14,9 +14,9 @@ Game::Game()
     Score(0),
     IsRespawning(false),
     RespawnTimer(0.0f),
-    RespawnDelay(1.5f),
+    RespawnDelay(1.0f),
     InvincibleTimer(0.0f),
-    InvincibleDuration(1.0f),
+    InvincibleDuration(2.0f),
     GameOverTimer(0.0f),
     GameOverDelay(10.0f),
     IsBonusEnemyActive(false),
@@ -563,8 +563,7 @@ void Game::HandlePlayerBulletVsEnemyCollision()
 
 bool Game::HandleEnemyBulletVsPlayerCollision()
 {
-    if (IsRespawning || InvincibleTimer > 0.0f || CurrentState != GameState::Playing)
-        return false;
+    if (IsRespawning || CurrentState != GameState::Playing) return false;
 
     HitBox playerBox = PlayerObject.GetHitBox();
 
@@ -572,14 +571,17 @@ bool Game::HandleEnemyBulletVsPlayerCollision()
     {
         Bullet& bullet = EnemyBulletSystemObject.GetBullet(bulletIndex);
 
-        if (!bullet.GetIsActive())
-            continue;
+        if (!bullet.GetIsActive()) continue;
 
         if (CheckHitBoxCollision(bullet.GetHitBox(), playerBox))
         {
             bullet.Deactivate();
-            LoseLifeAndStartRespawn();
-            return true;
+
+            if (InvincibleTimer <= 0.0f)
+            {
+                LoseLifeAndStartRespawn();
+                return true;
+            }
         }
     }
 
@@ -724,7 +726,18 @@ void Game::Render()
 
     if (!IsRespawning && CurrentState != GameState::GameOverWait)
     {
-        PlayerObject.Render(Graphics);
+        bool shouldRenderPlayer = true;
+
+        if (InvincibleTimer > 0.0f)
+        {
+            int blinkFrame = static_cast<int>(GlobalTime * 12.0f);
+            shouldRenderPlayer = (blinkFrame % 2 == 0);
+        }
+
+        if (shouldRenderPlayer)
+        {
+            PlayerObject.Render(Graphics);
+        }
     }
 
     PlayerBulletSystemObject.Render(Graphics);
