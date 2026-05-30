@@ -57,6 +57,16 @@ commit message를 **`UPDATE_HISTORY`**로 작성해 주세요.
 # Updates
 
 * * *
+## 2026-05-28
+
+### Sera
+
+Task:
+
+  * UI 수정 (`f607f1b`)
+
+Details:
+Player와 Enemy 모양을 수정했읍니다. 
 
 ## 2026-05-27
 
