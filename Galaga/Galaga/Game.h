@@ -81,6 +81,9 @@ private:
     float NextWaveSpawnDelayTimer;
     float NextWaveSpawnDelay;
 
+    float EnemySpawnIntroTimer;
+    float EnemySpawnIntroDuration;
+
 public:
     Game();
 

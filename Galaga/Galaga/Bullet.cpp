@@ -95,7 +95,7 @@ void PlayerBulletSystem::Render(GraphicsContext& graphics) const
     {
         if (Bullets[i].GetIsActive())
         {
-            graphics.DrawTriangle(Bullets[i].GetX(), Bullets[i].GetY(), 0.18f, 0.35f, 0.5f, 0.5f, 0.5f, 1.0f);
+            graphics.DrawTriangle(Bullets[i].GetX(), Bullets[i].GetY(), 0.18f, 0.35f, 0.49f, 1.0f, 0.42f, 1.0f);
         }
     }
 }

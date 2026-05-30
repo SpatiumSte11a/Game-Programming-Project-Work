@@ -14,9 +14,9 @@ Game::Game()
     Score(0),
     IsRespawning(false),
     RespawnTimer(0.0f),
-    RespawnDelay(1.5f),
+    RespawnDelay(1.0f),
     InvincibleTimer(0.0f),
-    InvincibleDuration(1.0f),
+    InvincibleDuration(2.0f),
     GameOverTimer(0.0f),
     GameOverDelay(10.0f),
     IsBonusEnemyActive(false),
@@ -27,7 +27,10 @@ Game::Game()
     WaveTransitionDelay(1.0f),
     IsNextWaveSpawnDelay(false),
     NextWaveSpawnDelayTimer(0.0f),
-    NextWaveSpawnDelay(1.0f)
+    NextWaveSpawnDelay(1.0f),
+    EnemySpawnIntroTimer(0.0f),
+    EnemySpawnIntroDuration(0.7f)
+
 {
     PrevTime = std::chrono::high_resolution_clock::now();
 
@@ -95,6 +98,9 @@ void Game::SetupEnemiesForWave(int wave)
         BonusEnemyObject = Enemy();
         IsBonusEnemyActive = false;
     }
+
+    EnemySpawnIntroTimer = EnemySpawnIntroDuration;
+
 }
 
 bool Game::AreAllEnemiesDefeated() const
@@ -423,8 +429,17 @@ void Game::Update(float dt)
         }
     }
 
-    bool isInWaveBreak = IsWaveTransition || IsNextWaveSpawnDelay;
+    if (EnemySpawnIntroTimer > 0.0f)
+    {
+        EnemySpawnIntroTimer -= dt;
 
+        if (EnemySpawnIntroTimer < 0.0f)
+        {
+            EnemySpawnIntroTimer = 0.0f;
+        }
+    }
+
+bool isInWaveBreak = IsWaveTransition || IsNextWaveSpawnDelay || EnemySpawnIntroTimer > 0.0f;
     bool canControlPlayer =
         CurrentState == GameState::Playing &&
         !IsRespawning &&
@@ -563,8 +578,7 @@ void Game::HandlePlayerBulletVsEnemyCollision()
 
 bool Game::HandleEnemyBulletVsPlayerCollision()
 {
-    if (IsRespawning || InvincibleTimer > 0.0f || CurrentState != GameState::Playing)
-        return false;
+    if (IsRespawning || CurrentState != GameState::Playing) return false;
 
     HitBox playerBox = PlayerObject.GetHitBox();
 
@@ -572,14 +586,17 @@ bool Game::HandleEnemyBulletVsPlayerCollision()
     {
         Bullet& bullet = EnemyBulletSystemObject.GetBullet(bulletIndex);
 
-        if (!bullet.GetIsActive())
-            continue;
+        if (!bullet.GetIsActive()) continue;
 
         if (CheckHitBoxCollision(bullet.GetHitBox(), playerBox))
         {
             bullet.Deactivate();
-            LoseLifeAndStartRespawn();
-            return true;
+
+            if (InvincibleTimer <= 0.0f)
+            {
+                LoseLifeAndStartRespawn();
+                return true;
+            }
         }
     }
 
@@ -637,15 +654,31 @@ bool Game::HandlePlayerCaptureCollision()
 
 void Game::RenderLives()
 {
-    const float iconY = 0.88f;
-    const float iconScale = 0.45f;
-    const float spacing = 0.14f;
-    const float startX = 0.82f;
+    const float scoreStartX = 0.54f;
+    const float scoreScale = 0.75f;
+    const float scoreDigitWidth = 0.06f * scoreScale;
+    const float scoreWidth = scoreDigitWidth * 6.0f;
+    const float scoreCenterX = scoreStartX + scoreWidth * 0.5f;
+
+    const int maxLives = 3;
+
+    const float iconY = 0.90f;
+    const float iconScale = 0.095f;
+    const float spacing = 0.115f;
+
+    float firstX = scoreCenterX - spacing * (maxLives - 1) * 0.5f;
 
     for (int i = 0; i < PlayerLives; ++i)
     {
-        float x = startX - i * spacing;
-        Graphics.DrawTriangle(x, iconY, iconScale, iconScale);
+        float x = firstX + i * spacing;
+
+        Graphics.DrawSprite(
+            Graphics.GetShipTexture(),
+            x,
+            iconY,
+            iconScale,
+            iconScale
+        );
     }
 }
 
@@ -708,7 +741,18 @@ void Game::Render()
 
     if (!IsRespawning && CurrentState != GameState::GameOverWait)
     {
-        PlayerObject.Render(Graphics);
+        bool shouldRenderPlayer = true;
+
+        if (InvincibleTimer > 0.0f)
+        {
+            int blinkFrame = static_cast<int>(GlobalTime * 12.0f);
+            shouldRenderPlayer = (blinkFrame % 2 == 0);
+        }
+
+        if (shouldRenderPlayer)
+        {
+            PlayerObject.Render(Graphics);
+        }
     }
 
     PlayerBulletSystemObject.Render(Graphics);
@@ -733,18 +777,33 @@ void Game::Render()
     RenderLives();
 
     std::string scoreStr = std::to_string(Score);
+
     while (scoreStr.length() < 6)
+    {
         scoreStr = "0" + scoreStr;
+    }
 
     Graphics.DrawNumbers(scoreStr, 0.54f, 0.81f, 0.75f);
 
     for (int i = 0; i < EnemyCount; i++)
     {
-        if (!EnemySlotsActive[i])
-            continue;
+        if (!EnemySlotsActive[i]) continue;
+        if (!Enemies[i].GetIsAlive()) continue;
 
-        if (!Enemies[i].GetIsAlive())
-            continue;
+        float spawnScale = 1.0f;
+
+        if (EnemySpawnIntroTimer > 0.0f)
+        {
+            float spawnProgress = 1.0f - EnemySpawnIntroTimer / EnemySpawnIntroDuration;
+            spawnScale = 0.25f + spawnProgress * 0.75f;
+
+            int blinkFrame = static_cast<int>(GlobalTime * 14.0f);
+
+            if (blinkFrame % 2 != 0)
+            {
+                continue;
+            }
+        }
 
         if (Enemies[i].GetIsBeaming())
         {
@@ -773,8 +832,8 @@ void Game::Render()
                 Graphics.GetEnemy1Texture(),
                 Enemies[i].GetX(),
                 Enemies[i].GetY(),
-                0.15f,
-                0.15f
+                0.15f * spawnScale,
+                0.15f * spawnScale
             );
             break;
 
@@ -783,8 +842,8 @@ void Game::Render()
                 Graphics.GetEnemy2Texture(),
                 Enemies[i].GetX(),
                 Enemies[i].GetY(),
-                0.15f,
-                0.15f
+                0.15f * spawnScale,
+                0.15f * spawnScale
             );
             break;
 
@@ -793,8 +852,8 @@ void Game::Render()
                 Graphics.GetEnemy3Texture(),
                 Enemies[i].GetX(),
                 Enemies[i].GetY(),
-                0.18f,
-                0.18f
+                0.18f * spawnScale,
+                0.18f * spawnScale
             );
             break;
 
