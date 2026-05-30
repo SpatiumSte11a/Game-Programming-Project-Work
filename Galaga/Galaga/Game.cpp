@@ -27,7 +27,10 @@ Game::Game()
     WaveTransitionDelay(1.0f),
     IsNextWaveSpawnDelay(false),
     NextWaveSpawnDelayTimer(0.0f),
-    NextWaveSpawnDelay(1.0f)
+    NextWaveSpawnDelay(1.0f),
+    EnemySpawnIntroTimer(0.0f),
+    EnemySpawnIntroDuration(0.7f)
+
 {
     PrevTime = std::chrono::high_resolution_clock::now();
 
@@ -95,6 +98,9 @@ void Game::SetupEnemiesForWave(int wave)
         BonusEnemyObject = Enemy();
         IsBonusEnemyActive = false;
     }
+
+    EnemySpawnIntroTimer = EnemySpawnIntroDuration;
+
 }
 
 bool Game::AreAllEnemiesDefeated() const
@@ -423,8 +429,17 @@ void Game::Update(float dt)
         }
     }
 
-    bool isInWaveBreak = IsWaveTransition || IsNextWaveSpawnDelay;
+    if (EnemySpawnIntroTimer > 0.0f)
+    {
+        EnemySpawnIntroTimer -= dt;
 
+        if (EnemySpawnIntroTimer < 0.0f)
+        {
+            EnemySpawnIntroTimer = 0.0f;
+        }
+    }
+
+bool isInWaveBreak = IsWaveTransition || IsNextWaveSpawnDelay || EnemySpawnIntroTimer > 0.0f;
     bool canControlPlayer =
         CurrentState == GameState::Playing &&
         !IsRespawning &&
@@ -762,18 +777,33 @@ void Game::Render()
     RenderLives();
 
     std::string scoreStr = std::to_string(Score);
+
     while (scoreStr.length() < 6)
+    {
         scoreStr = "0" + scoreStr;
+    }
 
     Graphics.DrawNumbers(scoreStr, 0.54f, 0.81f, 0.75f);
 
     for (int i = 0; i < EnemyCount; i++)
     {
-        if (!EnemySlotsActive[i])
-            continue;
+        if (!EnemySlotsActive[i]) continue;
+        if (!Enemies[i].GetIsAlive()) continue;
 
-        if (!Enemies[i].GetIsAlive())
-            continue;
+        float spawnScale = 1.0f;
+
+        if (EnemySpawnIntroTimer > 0.0f)
+        {
+            float spawnProgress = 1.0f - EnemySpawnIntroTimer / EnemySpawnIntroDuration;
+            spawnScale = 0.25f + spawnProgress * 0.75f;
+
+            int blinkFrame = static_cast<int>(GlobalTime * 14.0f);
+
+            if (blinkFrame % 2 != 0)
+            {
+                continue;
+            }
+        }
 
         if (Enemies[i].GetIsBeaming())
         {
@@ -802,8 +832,8 @@ void Game::Render()
                 Graphics.GetEnemy1Texture(),
                 Enemies[i].GetX(),
                 Enemies[i].GetY(),
-                0.15f,
-                0.15f
+                0.15f * spawnScale,
+                0.15f * spawnScale
             );
             break;
 
@@ -812,8 +842,8 @@ void Game::Render()
                 Graphics.GetEnemy2Texture(),
                 Enemies[i].GetX(),
                 Enemies[i].GetY(),
-                0.15f,
-                0.15f
+                0.15f * spawnScale,
+                0.15f * spawnScale
             );
             break;
 
@@ -822,8 +852,8 @@ void Game::Render()
                 Graphics.GetEnemy3Texture(),
                 Enemies[i].GetX(),
                 Enemies[i].GetY(),
-                0.18f,
-                0.18f
+                0.18f * spawnScale,
+                0.18f * spawnScale
             );
             break;
 
