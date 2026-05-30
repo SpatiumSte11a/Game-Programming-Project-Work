@@ -463,8 +463,8 @@ HitBox Enemy::GetHitBox() const
         break;
 
     case EnemyType::Type3:
-        box.HalfWidth = 0.045f;
-        box.HalfHeight = 0.063f;
+        box.HalfWidth = 0.080f;
+        box.HalfHeight = 0.060f;
         break;
 
     case EnemyType::Type4:
