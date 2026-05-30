@@ -285,6 +285,9 @@ void Game::Run()
 
 void Game::Input()
 {
+    if (GetForegroundWindow() != Window.hWnd)
+        return;
+
     if (GetAsyncKeyState(VK_ESCAPE) & 0x8000)
     {
         IsRunning = false;
@@ -323,6 +326,11 @@ void Game::Input()
 
 void Game::Update(float dt)
 {
+    if (GetForegroundWindow() != Window.hWnd && CurrentState == GameState::Playing)
+    {
+        CurrentState = GameState::Paused;
+    }
+
     GlobalTime += dt;
 
     for (int i = 0; i < StarCount; i++)
@@ -338,7 +346,10 @@ void Game::Update(float dt)
 
     if (CurrentState == GameState::Startup)
     {
-        StartScreen.Update(dt);
+        if (GetForegroundWindow() == Window.hWnd)
+        {
+            StartScreen.Update(dt);
+        }
         return;
     }
 
@@ -417,7 +428,8 @@ void Game::Update(float dt)
     bool canControlPlayer =
         CurrentState == GameState::Playing &&
         !IsRespawning &&
-        !isCaptured;
+        !isCaptured &&
+        (GetForegroundWindow() == Window.hWnd);
 
     bool moveLeft = canControlPlayer && ((GetAsyncKeyState(VK_LEFT) & 0x8000) || (GetAsyncKeyState('A') & 0x8000));
     bool moveRight = canControlPlayer && ((GetAsyncKeyState(VK_RIGHT) & 0x8000) || (GetAsyncKeyState('D') & 0x8000));

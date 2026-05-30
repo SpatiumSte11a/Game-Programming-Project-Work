@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #define NOMINMAX
 #include <windows.h>
 #include <d3d11.h>
@@ -27,6 +27,10 @@ struct ConstantBuffer
     float offsetY;
     float scaleX;
     float scaleY;
+    float tintR;
+    float tintG;
+    float tintB;
+    float tintA;
 };
 
 class GraphicsContext
@@ -89,10 +93,10 @@ public:
     bool Initialize(HWND hWnd, int width, int height);
 
     void BeginFrame();
-    void DrawTriangle(float offsetX, float offsetY, float scaleX, float scaleY);
-    void DrawDownTriangle(float offsetX, float offsetY, float scaleX, float scaleY);
-    void DrawQuad(float offsetX, float offsetY, float scaleX, float scaleY);
-    void DrawDiamond(float offsetX, float offsetY, float scaleX, float scaleY);
+    void DrawTriangle(float offsetX, float offsetY, float scaleX, float scaleY, float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f);
+    void DrawDownTriangle(float offsetX, float offsetY, float scaleX, float scaleY, float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f);
+    void DrawQuad(float offsetX, float offsetY, float scaleX, float scaleY, float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f);
+    void DrawDiamond(float offsetX, float offsetY, float scaleX, float scaleY, float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f);
     void DrawText(const std::string& text, float x, float y, float scale);
     void DrawNumbers(const std::string& text, float x, float y, float scale);
     void DrawSprite(ID3D11ShaderResourceView* srv, float x, float y, float scaleX, float scaleY);
