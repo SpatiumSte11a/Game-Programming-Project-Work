@@ -11,14 +11,10 @@ public:
     void Render(GraphicsContext& graphics, float globalTime);
 
     bool ShouldStartGame() const { return CountdownDone; }
-    bool ShouldRestartGame() const { return RestartPressed; }
     void Reset();
 
 private:
-    HWND WindowHandle = nullptr;
-
     bool StartPressed = false;
-    bool RestartPressed = false;
 
     bool CountdownActive = false;
     bool CountdownDone = false;
