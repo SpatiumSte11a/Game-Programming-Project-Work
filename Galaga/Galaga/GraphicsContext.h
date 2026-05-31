@@ -51,7 +51,6 @@ private:
     ID3D11Buffer* DiamondVertexBuffer;
     ID3D11Buffer* ConstantBufferGPU;
 
-    ID3D11Buffer* VertexBuffer;
     ID3D11VertexShader* TextVertexShader;
     ID3D11PixelShader* TextPixelShader;
     ID3D11InputLayout* TextInputLayout;
@@ -100,6 +99,7 @@ public:
     void DrawText(const std::string& text, float x, float y, float scale);
     void DrawNumbers(const std::string& text, float x, float y, float scale);
     void DrawSprite(ID3D11ShaderResourceView* srv, float x, float y, float scaleX, float scaleY);
+    void DrawSpriteUpsideDown(ID3D11ShaderResourceView* srv, float x, float y, float scaleX, float scaleY);
     void EndFrame();
 
 private:

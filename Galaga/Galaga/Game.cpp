@@ -860,6 +860,17 @@ void Game::Render()
         case EnemyType::Type4:
             break;
         }
+
+        if (Enemies[i].GetHasCapturedShipVisual())
+        {
+            Graphics.DrawSpriteUpsideDown(
+                Graphics.GetShipTexture(),
+                Enemies[i].GetX() + 0.12f,
+                Enemies[i].GetY(),
+                0.15f * spawnScale,
+                0.15f * spawnScale
+            );
+        }
     }
 
     if (IsBonusEnemyActive)

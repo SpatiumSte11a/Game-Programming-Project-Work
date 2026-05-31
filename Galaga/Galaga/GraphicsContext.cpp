@@ -18,7 +18,6 @@ GraphicsContext::GraphicsContext()
     QuadVertexBuffer(nullptr),
     DiamondVertexBuffer(nullptr),
     ConstantBufferGPU(nullptr),
-    VertexBuffer(nullptr),
     TextVertexShader(nullptr),
     TextPixelShader(nullptr),
     TextInputLayout(nullptr),
@@ -1018,6 +1017,53 @@ void GraphicsContext::DrawSprite(ID3D11ShaderResourceView* srv,
     D3D11_MAPPED_SUBRESOURCE mapped = {};
     Context->Map(SpriteVertexBuffer, 0, D3D11_MAP_WRITE_DISCARD,
         0, &mapped);
+    memcpy(mapped.pData, verts, sizeof(verts));
+    Context->Unmap(SpriteVertexBuffer, 0);
+
+    ConstantBuffer cb = {};
+    cb.offsetX = x;
+    cb.offsetY = y;
+    cb.scaleX = scaleX;
+    cb.scaleY = scaleY;
+    cb.tintR = 1.0f;
+    cb.tintG = 1.0f;
+    cb.tintB = 1.0f;
+    cb.tintA = 1.0f;
+    Context->UpdateSubresource(SpriteConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+    float blendFactor[4] = { 0,0,0,0 };
+    Context->OMSetBlendState(BlendState, blendFactor, 0xFFFFFFFF);
+
+    UINT stride = sizeof(FontVertex), offset = 0;
+    Context->IASetInputLayout(SpriteInputLayout);
+    Context->IASetVertexBuffers(0, 1, &SpriteVertexBuffer, &stride, &offset);
+    Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    Context->VSSetShader(SpriteVertexShader, nullptr, 0);
+    Context->PSSetShader(SpritePixelShader, nullptr, 0);
+    Context->VSSetConstantBuffers(0, 1, &SpriteConstantBuffer);
+    Context->PSSetShaderResources(0, 1, &srv);
+    Context->PSSetSamplers(0, 1, &SamplerState);
+    Context->Draw(6, 0);
+
+    Context->OMSetBlendState(nullptr, blendFactor, 0xFFFFFFFF);
+}
+
+void GraphicsContext::DrawSpriteUpsideDown(ID3D11ShaderResourceView* srv,
+    float x, float y,
+    float scaleX, float scaleY)
+{
+    FontVertex verts[6] =
+    {
+        { -0.5f,  0.5f, 0,  1.0f, 1.0f },
+        {  0.5f,  0.5f, 0,  0.0f, 1.0f },
+        { -0.5f, -0.5f, 0,  1.0f, 0.0f },
+        {  0.5f,  0.5f, 0,  0.0f, 1.0f },
+        {  0.5f, -0.5f, 0,  0.0f, 0.0f },
+        { -0.5f, -0.5f, 0,  1.0f, 0.0f },
+    };
+
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    Context->Map(SpriteVertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
     memcpy(mapped.pData, verts, sizeof(verts));
     Context->Unmap(SpriteVertexBuffer, 0);
 

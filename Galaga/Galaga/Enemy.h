@@ -65,7 +65,6 @@ public:
     bool GetWantsToShoot() const;
     void ClearWantsToShoot();
 
-    float GetRadius() const;
     void StartDive();
     void TakeDamage();
     int GetHealth() const;

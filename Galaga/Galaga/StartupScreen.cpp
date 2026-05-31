@@ -19,12 +19,6 @@ void StartupScreen::Input()
     if (CountdownActive)
         return;
 
-    if (GetAsyncKeyState(VK_ESCAPE) & 0x0001)
-    {
-        RestartPressed = true;
-        return;
-    }
-
     // Any key starts countdown
     for (int vk = 0x08; vk < 0xFF; vk++)
     {
@@ -100,7 +94,6 @@ void StartupScreen::Render(GraphicsContext& graphics, float globalTime)
 void StartupScreen::Reset()
 {
     StartPressed = false;
-    RestartPressed = false;
     CountdownActive = false;
     CountdownDone = false;
     CountdownTimer = 0.0f;

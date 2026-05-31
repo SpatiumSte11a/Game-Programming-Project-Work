@@ -250,10 +250,10 @@ void Enemy::UpdateBeaming(float dt, float playerX, float playerY)
     if (BeamScale < 1.0f)
         BeamScale += dt * 0.5f;
 
-    float beamWidth = 0.075f;
+    float beamWidth = 0.22f;
     float beamTipY = Y - 0.18f - 0.6f * BeamScale;
 
-    if (fabsf(playerX - X) < beamWidth && beamTipY <= playerY)
+    if (fabsf(playerX - X) < beamWidth && playerY <= Y && playerY >= beamTipY)
     {
         IsPlayerCaptured = true;
         HasCapturedShipVisual = true;
@@ -401,17 +401,6 @@ bool Enemy::GetWantsToShoot() const
 void Enemy::ClearWantsToShoot()
 {
     WantsToShoot = false;
-}
-
-float Enemy::GetRadius() const
-{
-    if (Type == EnemyType::Type3)
-        return 0.09f;
-
-    if (Type == EnemyType::Type4)
-        return 0.07f;
-
-    return 0.06f;
 }
 
 int Enemy::GetHealth() const
