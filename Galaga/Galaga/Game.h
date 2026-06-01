@@ -47,6 +47,7 @@ private:
 
     int PlayerLives;
     int Score;
+    int HighScore;
 
     bool IsRespawning;
     float RespawnTimer;
