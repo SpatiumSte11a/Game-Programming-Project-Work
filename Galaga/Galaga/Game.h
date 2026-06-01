@@ -17,6 +17,7 @@ enum class GameState
     Playing,
     Paused,
     GameOverWait,
+    Ending,
     Exit
 };
 
@@ -56,6 +57,8 @@ private:
 
     float GameOverTimer;
     float GameOverDelay;
+    
+    float EndingTimer;
 
     static const int StarCount = 80;
     Star Stars[StarCount];

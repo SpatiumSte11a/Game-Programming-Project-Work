@@ -71,6 +71,16 @@ private:
     ID3D11Buffer* SpriteVertexBuffer;
     ID3D11Buffer* SpriteConstantBuffer;
 
+    ID3D11VertexShader* NoiseVertexShader;
+    ID3D11PixelShader* NoisePixelShader;
+    ID3D11Buffer* NoiseConstantBuffer;
+
+    struct NoiseConstantBufferData
+    {
+        float time;
+        float padding[3];
+    };
+
     int ViewportWidth;
     int ViewportHeight;
 
@@ -91,7 +101,7 @@ public:
 
     bool Initialize(HWND hWnd, int width, int height);
 
-    void BeginFrame();
+    void BeginFrame(float shakeX = 0.0f, float shakeY = 0.0f);
     void DrawTriangle(float offsetX, float offsetY, float scaleX, float scaleY, float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f);
     void DrawDownTriangle(float offsetX, float offsetY, float scaleX, float scaleY, float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f);
     void DrawQuad(float offsetX, float offsetY, float scaleX, float scaleY, float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f);
@@ -100,6 +110,7 @@ public:
     void DrawNumbers(const std::string& text, float x, float y, float scale);
     void DrawSprite(ID3D11ShaderResourceView* srv, float x, float y, float scaleX, float scaleY);
     void DrawSpriteUpsideDown(ID3D11ShaderResourceView* srv, float x, float y, float scaleX, float scaleY);
+    void DrawNoiseBackground(float time);
     void EndFrame();
 
 private:
@@ -110,5 +121,6 @@ private:
     bool CreateQuad();
     bool CreateDiamond();
     bool CreateSpritePipeline();
+    bool CreateNoisePipeline();
     void ReleaseAll();
 };

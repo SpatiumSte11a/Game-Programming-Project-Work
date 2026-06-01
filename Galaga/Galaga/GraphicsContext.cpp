@@ -36,6 +36,9 @@ GraphicsContext::GraphicsContext()
     SpriteInputLayout(nullptr),
     SpriteVertexBuffer(nullptr),
     SpriteConstantBuffer(nullptr),
+    NoiseVertexShader(nullptr),
+    NoisePixelShader(nullptr),
+    NoiseConstantBuffer(nullptr),
     ViewportWidth(0),
     ViewportHeight(0)
 {
@@ -79,6 +82,10 @@ void GraphicsContext::ReleaseAll()
     if (SpriteInputLayout) { SpriteInputLayout->Release();    SpriteInputLayout = nullptr; }
     if (SpritePixelShader) { SpritePixelShader->Release();    SpritePixelShader = nullptr; }
     if (SpriteVertexShader) { SpriteVertexShader->Release();   SpriteVertexShader = nullptr; }
+
+    if (NoiseConstantBuffer) { NoiseConstantBuffer->Release(); NoiseConstantBuffer = nullptr; }
+    if (NoisePixelShader) { NoisePixelShader->Release(); NoisePixelShader = nullptr; }
+    if (NoiseVertexShader) { NoiseVertexShader->Release(); NoiseVertexShader = nullptr; }
 }
 
 bool GraphicsContext::Initialize(HWND hWnd, int width, int height)
@@ -140,6 +147,9 @@ bool GraphicsContext::Initialize(HWND hWnd, int width, int height)
         return false;
 
     if (!CreateSpritePipeline())
+        return false;
+
+    if (!CreateNoisePipeline())
         return false;
 
     ShipTexture = LoadSprite(L"ship.png");
@@ -209,7 +219,6 @@ float4 PSMain(PS_INPUT i) : SV_TARGET
 {
     float4 t = fontTex.Sample(samp, i.uv);
     
-    // Simple black color keying: if the pixel is very dark, make it transparent
     float brightness = (t.r + t.g + t.b) / 3.0f;
     if (brightness < 0.05f) discard;
 
@@ -648,7 +657,7 @@ bool GraphicsContext::CreateDiamond()
     return true;
 }
 
-void GraphicsContext::BeginFrame()
+void GraphicsContext::BeginFrame(float shakeX, float shakeY)
 {
     float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
@@ -656,8 +665,8 @@ void GraphicsContext::BeginFrame()
     Context->ClearRenderTargetView(RTV, clearColor);
 
     D3D11_VIEWPORT vp = {};
-    vp.TopLeftX = 0.0f;
-    vp.TopLeftY = 0.0f;
+    vp.TopLeftX = shakeX;
+    vp.TopLeftY = shakeY;
     vp.Width = 720.0f;
     vp.Height = 960.0f;
     vp.MinDepth = 0.0f;
@@ -1093,6 +1102,98 @@ void GraphicsContext::DrawSpriteUpsideDown(ID3D11ShaderResourceView* srv,
     Context->Draw(6, 0);
 
     Context->OMSetBlendState(nullptr, blendFactor, 0xFFFFFFFF);
+}
+
+bool GraphicsContext::CreateNoisePipeline()
+{
+    const char* src = R"(
+cbuffer NoiseCB : register(b0)
+{
+    float time;
+    float3 padding;
+};
+
+struct VS_INPUT { float3 pos : POSITION; float4 col : COLOR; };
+struct PS_INPUT { float4 pos : SV_POSITION; float2 uv : TEXCOORD; };
+
+PS_INPUT VSMain(VS_INPUT i)
+{
+    PS_INPUT o;
+    // Scale Quad (-0.05..0.05) to (-1..1) to cover full screen
+    o.pos = float4(i.pos.x * 20.0f, i.pos.y * 20.0f, 0.0f, 1.0f);
+    o.uv = float2(o.pos.x * 0.5f + 0.5f, -o.pos.y * 0.5f + 0.5f);
+    return o;
+}
+
+float rand(float2 uv)
+{
+    return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453);
+}
+
+float4 PSMain(PS_INPUT i) : SV_TARGET
+{
+    float n = rand(i.uv + time);
+    return float4(n, n, n, 1.0f);
+}
+)";
+
+    ID3DBlob* vsBlob = nullptr;
+    ID3DBlob* psBlob = nullptr;
+    ID3DBlob* errBlob = nullptr;
+
+    HRESULT hr = D3DCompile(src, strlen(src), nullptr, nullptr, nullptr, "VSMain", "vs_5_0", 0, 0, &vsBlob, &errBlob);
+    if (FAILED(hr))
+    {
+        if (errBlob) errBlob->Release();
+        return false;
+    }
+
+    hr = D3DCompile(src, strlen(src), nullptr, nullptr, nullptr, "PSMain", "ps_5_0", 0, 0, &psBlob, &errBlob);
+    if (FAILED(hr))
+    {
+        vsBlob->Release();
+        if (errBlob) errBlob->Release();
+        return false;
+    }
+
+    hr = Device->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &NoiseVertexShader);
+    if (FAILED(hr)) return false;
+    
+    hr = Device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &NoisePixelShader);
+    if (FAILED(hr)) return false;
+
+    vsBlob->Release();
+    psBlob->Release();
+
+    D3D11_BUFFER_DESC cbd = {};
+    cbd.Usage = D3D11_USAGE_DEFAULT;
+    cbd.ByteWidth = sizeof(NoiseConstantBufferData);
+    cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+
+    hr = Device->CreateBuffer(&cbd, nullptr, &NoiseConstantBuffer);
+    if (FAILED(hr)) return false;
+
+    return true;
+}
+
+void GraphicsContext::DrawNoiseBackground(float time)
+{
+    NoiseConstantBufferData cb = {};
+    cb.time = time;
+    Context->UpdateSubresource(NoiseConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+    UINT stride = sizeof(Vertex);
+    UINT offset = 0;
+
+    Context->IASetInputLayout(InputLayout);
+    Context->IASetVertexBuffers(0, 1, &QuadVertexBuffer, &stride, &offset);
+    Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    Context->VSSetShader(NoiseVertexShader, nullptr, 0);
+    Context->PSSetShader(NoisePixelShader, nullptr, 0);
+    Context->VSSetConstantBuffers(0, 1, &NoiseConstantBuffer);
+
+    Context->Draw(6, 0);
 }
 
 void GraphicsContext::EndFrame()
