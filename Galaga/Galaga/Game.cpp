@@ -17,6 +17,7 @@ Game::Game()
     RespawnTimer(0.0f),
     RespawnDelay(1.0f),
     InvincibleTimer(0.0f),
+    InvincibleDuration(2.0f),
     GameOverTimer(0.0f),
     GameOverDelay(10.0f),
     EndingTimer(0.0f),
