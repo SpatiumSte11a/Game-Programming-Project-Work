@@ -12,6 +12,7 @@ Game::Game()
     GlobalTime(0.0f),
     PlayerLives(3),
     Score(0),
+    HighScore(0),
     IsRespawning(false),
     RespawnTimer(0.0f),
     RespawnDelay(1.0f),
@@ -164,6 +165,12 @@ void Game::LoseLifeAndStartRespawn()
         RespawnTimer = 0.0f;
         InvincibleTimer = 0.0f;
         GameOverTimer = GameOverDelay;
+
+        if (Score > HighScore)
+        {
+            HighScore = Score;
+        }
+
         CurrentState = GameState::GameOverWait;
 
         PlayerObject = Player();
@@ -327,6 +334,15 @@ void Game::Input()
         return;
     }
 
+    if (CurrentState == GameState::Playing && (GetAsyncKeyState('X') & 0x0001))
+    {
+        PlayerLives = 1;
+
+        LoseLifeAndStartRespawn();
+
+        return;
+    }
+
     if (CurrentState == GameState::Startup)
     {
         StartScreen.Input();
@@ -425,7 +441,13 @@ void Game::Update(float dt)
 
             if (CurrentWave > 30)
             {
+                if (Score > HighScore)
+                {
+                    HighScore = Score;
+                }
+
                 CurrentState = GameState::Ending;
+
                 EndingTimer = 0.0f;
             }
             else
@@ -784,19 +806,41 @@ void Game::Render()
 
     if (CurrentState == GameState::Ending)
     {
-        // 1초 이후부터 축하 메시지 표시 (화면 흔들림이 끝날 무렵부터 자연스럽게 등장)
+        // 1초 이후부터 축하 메시지와 최종 점수를 표시합니다.
         if (EndingTimer > 1.0f)
         {
             float yOffset = sinf(GlobalTime * 2.0f) * 0.05f;
-            Graphics.DrawText("CONGRATULATIONS", -0.47f, 0.2f + yOffset, 0.9f);
+
+            std::string finalScoreStr = std::to_string(Score);
+
+            while (finalScoreStr.length() < 6)
+            {
+                finalScoreStr = "0" + finalScoreStr;
+            }
+
+            std::string highScoreStr = std::to_string(HighScore);
+
+            while (highScoreStr.length() < 6)
+            {
+                highScoreStr = "0" + highScoreStr;
+            }
+
+            Graphics.DrawText("CONGRATULATIONS", -0.47f, 0.25f + yOffset, 0.9f);
+
+            Graphics.DrawText("FINAL SCORE", -0.47f, -0.05f, 0.42f);
+            Graphics.DrawNumbers(finalScoreStr, 0.28f, -0.05f, 0.48f);
+
+            Graphics.DrawText("HIGH SCORE", -0.47f, -0.25f, 0.42f);
+            Graphics.DrawNumbers(highScoreStr, 0.28f, -0.25f, 0.48f);
 
             if (sinf(GlobalTime * 5.0f) > 0.0f)
             {
-                Graphics.DrawText("PRESS ANY KEY TO RETURN TO MAIN", -0.52f, -0.4f, 0.5f);
+                Graphics.DrawText("PRESS ANY KEY TO RETURN TO MAIN", -0.52f, -0.65f, 0.5f);
             }
         }
 
         Graphics.EndFrame();
+
         return;
     }
 
@@ -827,7 +871,27 @@ void Game::Render()
 
     if (CurrentState == GameState::GameOverWait)
     {
-        Graphics.DrawText("GAME OVER", -0.40f, 0.10f, 1.2f);
+        std::string finalScoreStr = std::to_string(Score);
+
+        while (finalScoreStr.length() < 6)
+        {
+            finalScoreStr = "0" + finalScoreStr;
+        }
+
+        std::string highScoreStr = std::to_string(HighScore);
+
+        while (highScoreStr.length() < 6)
+        {
+            highScoreStr = "0" + highScoreStr;
+        }
+
+        Graphics.DrawText("GAME OVER", -0.40f, 0.25f, 1.2f);
+
+        Graphics.DrawText("FINAL SCORE", -0.40f, -0.05f, 0.38f);
+        Graphics.DrawNumbers(finalScoreStr, 0.17f, -0.05f, 0.43f);
+
+        Graphics.DrawText("HIGH SCORE", -0.40f, -0.23f, 0.38f);
+        Graphics.DrawNumbers(highScoreStr, 0.17f, -0.23f, 0.43f);
     }
 
     if (IsWaveTransition)
