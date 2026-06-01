@@ -16,9 +16,9 @@ Game::Game()
     RespawnTimer(0.0f),
     RespawnDelay(1.0f),
     InvincibleTimer(0.0f),
-    InvincibleDuration(2.0f),
     GameOverTimer(0.0f),
     GameOverDelay(10.0f),
+    EndingTimer(0.0f),
     IsBonusEnemyActive(false),
     BonusEnemySpeed(0.55f),
     CurrentWave(1),
@@ -123,12 +123,12 @@ void Game::ResetGame()
     GlobalTime = 0.0f;
     PlayerLives = 3;
     Score = 0;
-
     IsRespawning = false;
     RespawnTimer = 0.0f;
     InvincibleTimer = 0.0f;
 
     GameOverTimer = 0.0f;
+    EndingTimer = 0.0f;
 
     CurrentWave = 1;
     IsWaveTransition = false;
@@ -306,6 +306,27 @@ void Game::Input()
         return;
     }
 
+    if (CurrentState == GameState::Ending)
+    {
+        for (int vk = 0x08; vk < 0xFF; vk++)
+        {
+            if (GetAsyncKeyState(vk) & 0x0001)
+            {
+                ResetGame();
+                return;
+            }
+        }
+        return;
+    }
+
+    if (CurrentState == GameState::Playing && (GetAsyncKeyState('Z') & 0x0001))
+    {
+        CurrentWave = 30;
+        for (int i = 0; i < EnemyCount; i++) EnemySlotsActive[i] = false;
+        IsBonusEnemyActive = false;
+        return;
+    }
+
     if (CurrentState == GameState::Startup)
     {
         StartScreen.Input();
@@ -359,6 +380,11 @@ void Game::Update(float dt)
         return;
     }
 
+    if (CurrentState == GameState::Ending)
+    {
+        EndingTimer += dt;
+    }
+
     if (InvincibleTimer > 0.0f)
         InvincibleTimer -= dt;
 
@@ -397,9 +423,17 @@ void Game::Update(float dt)
             IsNextWaveSpawnDelay = false;
             CurrentWave++;
 
-            PlayerBulletSystemObject = PlayerBulletSystem();
-            EnemyBulletSystemObject = EnemyBulletSystem();
-            SetupEnemiesForWave(CurrentWave);
+            if (CurrentWave > 30)
+            {
+                CurrentState = GameState::Ending;
+                EndingTimer = 0.0f;
+            }
+            else
+            {
+                PlayerBulletSystemObject = PlayerBulletSystem();
+                EnemyBulletSystemObject = EnemyBulletSystem();
+                SetupEnemiesForWave(CurrentWave);
+            }
         }
     }
 
@@ -715,7 +749,16 @@ void Game::RenderStars()
 
 void Game::Render()
 {
-    Graphics.BeginFrame();
+    float shakeX = 0.0f;
+    float shakeY = 0.0f;
+
+    if (CurrentState == GameState::Ending && EndingTimer < 1.5f)
+    {
+        shakeX = (rand() % 21 - 10) * 1.0f;
+        shakeY = (rand() % 21 - 10) * 1.0f;
+    }
+
+    Graphics.BeginFrame(shakeX, shakeY);
 
     RenderStars();
 
@@ -733,6 +776,24 @@ void Game::Render()
         if (sinf(GlobalTime * 3.14f) > 0.0f)
         {
             Graphics.DrawText("PRESS P TO CONTINUE", -0.30f, -0.1f, 0.4f);
+        }
+
+        Graphics.EndFrame();
+        return;
+    }
+
+    if (CurrentState == GameState::Ending)
+    {
+        // 1초 이후부터 축하 메시지 표시 (화면 흔들림이 끝날 무렵부터 자연스럽게 등장)
+        if (EndingTimer > 1.0f)
+        {
+            float yOffset = sinf(GlobalTime * 2.0f) * 0.05f;
+            Graphics.DrawText("CONGRATULATIONS", -0.47f, 0.2f + yOffset, 0.9f);
+
+            if (sinf(GlobalTime * 5.0f) > 0.0f)
+            {
+                Graphics.DrawText("PRESS ANY KEY TO RETURN TO MAIN", -0.52f, -0.4f, 0.5f);
+            }
         }
 
         Graphics.EndFrame();
