@@ -1,166 +1,129 @@
-# DIAGRAM
+# Galaga 프로젝트 클래스 다이어그램 (Class Diagram)
 
-이 문서는 현재 프로젝트 구조와 앞으로 추가할 요소를 한눈에 보기 위한 테스트 다이어그램입니다.
-이 다이어그램은 최종 버전이 아니라, 다음 수업 시간에 팀원들과 함께 보면서 수정하고 발전시키기 위한 초안입니다.
-
-즉, 현재까지 구현된 구조와 앞으로 추가하고 싶은 구조를 함께 정리한 discussion draft로 생각하면 됩니다.
-
----
-
-## Current Structure
-
-현재 구조를 정리한 다이어그램입니다.
-여기에는 지금 실제 코드 안에서 이미 구현되어 있고 동작하고 있는 요소들만 포함되어 있습니다.
-즉, main.cpp, Game, WindowContext, GraphicsContext를 중심으로 현재 프로젝트가 어떻게 실행되고 있는지를 보여 주는 부분입니다.
+프로젝트의 전체적인 구조와 클래스 간의 관계(의존성 및 포함 관계)를 한눈에 파악할 수 있도록 작성된 클래스 다이어그램입니다.
 
 ```mermaid
 classDiagram
-    class Main {
-        WinMain()
-    }
-
     class Game {
+        -GraphicsContext Graphics
+        -WindowContext Window
+        -StartupScreen StartScreen
+        -Player PlayerObj
+        -PlayerBulletSystem PlayerBulletSystemObject
+        -EnemyBulletSystem EnemyBulletSystemObject
+        -Enemy Enemies[WaveMaxEnemies]
+        -GameState CurrentState
+        -int Score
+        -int HighScore
         +Initialize()
         +Run()
-        +Input()
-        +Update()
-        +Render()
-        -GetDeltaTime()
-    }
-
-    class WindowContext {
-        +Initialize()
-        +hWnd
-        +Width
-        +Height
+        -Input()
+        -Update(dt)
+        -Render()
+        -SetupEnemiesForWave()
     }
 
     class GraphicsContext {
-        +Initialize()
-        +BeginFrame()
-        +DrawTriangle()
+        -ID3D11Device* Device
+        -ID3D11DeviceContext* Context
+        -IDXGISwapChain* SwapChain
+        +Initialize(hWnd, width, height)
+        +BeginFrame(shakeX, shakeY)
         +EndFrame()
-        -CreateRenderTarget()
-        -CreateShaders()
-        -CreateTriangle()
+        +DrawSprite(srv, x, y, scaleX, scaleY)
+        +DrawSpriteUpsideDown(srv, x, y, scaleX, scaleY)
+        +DrawText(text, x, y, scale)
+        +DrawNumbers(text, x, y, scale)
     }
 
-    Main --> Game
-    Game --> WindowContext
-    Game --> GraphicsContext
-```
-
----
-
-## Future Structure
-
-이 다이어그램은 앞으로 프로젝트가 확장될 경우를 생각해서 정리한 구조입니다.
-아직 전부 구현된 것은 아니며, 다음 수업 시간에 팀원들과 함께 보면서 수정하고 발전시킬 테스트용 초안입니다.
-즉, 이후에 추가할 수 있는 시스템과 역할 분담 방향을 생각하기 위한 참고 구조입니다.
-
-```mermaid
-classDiagram
-    class Main {
-        WinMain()
+    class WindowContext {
+        +HWND hWnd
+        +int Width
+        +int Height
+        +Initialize(hInstance, width, height)
+        +ProcessMessages() bool
     }
-
-    class Game {
-        +Initialize()
-        +Run()
-        +Input()
-        +Update()
-        +Render()
-    }
-
-    class WindowContext
-    class GraphicsContext
 
     class Player {
-        +Move()
-        +RequestShoot()
+        -float x
+        -float y
+        -float speed
+        +Update(dt)
+        +Render(GraphicsContext& graphics)
+        +GetX() float
+        +GetY() float
     }
 
     class Enemy {
-        +Move()
-        +RequestShoot()
+        -EnemyType Type
+        -EnemyState State
+        -float x
+        -float y
+        -float BaseX
+        -float BaseY
+        -float AttackTimer
+        +Initialize(type, index, x, y)
+        +Update(dt, playerX, playerY)
+        +Render(GraphicsContext& graphics)
     }
 
-    class EnemyManager {
-        +SpawnWave()
-        +UpdateEnemies()
+    class PlayerBulletSystem {
+        -Bullet Bullets[MaxPlayerBullets]
+        +Fire(x, y)
+        +Update(dt)
+        +Render(GraphicsContext& graphics)
+    }
+
+    class EnemyBulletSystem {
+        -Bullet Bullets[MaxEnemyBullets]
+        +TryShoot(enemyX, enemyY)
+        +Update(dt)
+        +Render(GraphicsContext& graphics)
     }
 
     class Bullet {
-        +Update()
-        +Render()
+        +float X
+        +float Y
+        +float Speed
+        +bool IsActive
+        +Update(dt)
     }
 
-    class ProjectileManager {
-        +SpawnPlayerBullet()
-        +SpawnEnemyBullet()
-        +UpdateProjectiles()
+    class StartupScreen {
+        -bool StartPressed
+        -bool CountdownActive
+        -float CountdownTimer
+        +Input()
+        +Update(dt)
+        +Render(GraphicsContext& graphics)
     }
-
-    class CollisionSystem {
-        +CheckBulletEnemy()
-        +CheckBulletPlayer()
-        +CheckPlayerEnemy()
-    }
-
-    class GameStateManager {
-        +Title()
-        +Playing()
-        +Pause()
-        +GameOver()
-        +Clear()
-    }
-
-    class UISystem {
-        +DrawTitleUI()
-        +DrawHUD()
-        +DrawGameOverUI()
-    }
-
-    class ScoreSystem {
-        +AddScore()
-        +ResetScore()
-    }
-
-    class LifeSystem {
-        +LoseLife()
-        +ResetLives()
-    }
-
-    Main --> Game
-    Game --> WindowContext
-    Game --> GraphicsContext
-
-    Game --> Player
-    Game --> EnemyManager
-    EnemyManager --> Enemy
-
-    Game --> ProjectileManager
-    ProjectileManager --> Bullet
-    Player --> ProjectileManager
-    Enemy --> ProjectileManager
-
-    Game --> CollisionSystem
-    CollisionSystem --> Player
-    CollisionSystem --> Enemy
-    CollisionSystem --> Bullet
-
-    Game --> GameStateManager
-    Game --> UISystem
-    Game --> ScoreSystem
-    Game --> LifeSystem
+    
+    %% Relationships (Composition)
+    Game *-- GraphicsContext : Contains
+    Game *-- WindowContext : Contains
+    Game *-- StartupScreen : Contains
+    Game *-- Player : Contains
+    Game *-- PlayerBulletSystem : Contains
+    Game *-- EnemyBulletSystem : Contains
+    Game *-- Enemy : Array (Pool)
+    
+    %% Relationships (Aggregation/Composition)
+    PlayerBulletSystem *-- Bullet : Manages
+    EnemyBulletSystem *-- Bullet : Manages
+    
+    %% Relationships (Dependency)
+    Game ..> WaveData : Uses
+    Enemy ..> GraphicsContext : Renders with
+    Player ..> GraphicsContext : Renders with
+    PlayerBulletSystem ..> GraphicsContext : Renders with
+    EnemyBulletSystem ..> GraphicsContext : Renders with
+    StartupScreen ..> GraphicsContext : Renders with
 ```
 
----
-
-## Note
-
-현재 구조는 main.cpp, Game, WindowContext, GraphicsContext 중심으로 되어 있습니다.
-앞으로는 Player, Enemy, Bullet 뿐만 아니라 ProjectileManager, CollisionSystem, UI, GameState 같은 요소들을 추가할지 팀과 함께 논의할 예정입니다.
-
-이 다이어그램은 다음 미팅에서 팀원들과 같이 보면서 수정하고,
-실제로 어떤 구조가 우리 프로젝트에 가장 적합한지 결정하기 위한 테스트 버전입니다.
+### 💡 주요 관계 설명 (Relationships)
+1.  **Composition (포함 관계, `*--`)**: 
+    *   `Game` 클래스는 프로젝트의 메인 컨트롤러로, 그래픽(`GraphicsContext`), 윈도우(`WindowContext`), 플레이어(`Player`), 적(`Enemy`), 총알 시스템(`BulletSystem`), 시작 화면(`StartupScreen`) 객체들을 멤버 변수로 소유하며 전체 생명주기를 관리합니다.
+    *   `PlayerBulletSystem`과 `EnemyBulletSystem`은 각각 자신이 발사한 `Bullet` 객체 배열을 내부적으로 관리(오브젝트 풀링 방식)합니다.
+2.  **Dependency (의존 관계, `..>`)**:
+    *   모든 게임 내 오브젝트(`Player`, `Enemy`, `StartupScreen`, `BulletSystem`)는 화면에 자신을 그리기 위해 `Game` 클래스가 전달해주는 `GraphicsContext`의 렌더링 함수(`DrawSprite`, `DrawText` 등)에 의존합니다.
+    *   `Game` 클래스는 웨이브 전환 시 `WaveData`의 정적 데이터를 불러와 적들을 배치합니다.
