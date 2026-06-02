@@ -1,99 +1,234 @@
-# Galaga
+# Galaga - Game Programming Project
 
-고전 아케이드 슈팅 게임 **Galaga**를 바탕으로 제작하는 2D 슈팅 게임 프로젝트입니다.  
-플레이어는 우주선을 조작하여 적을 공격하고, 적의 이동 패턴과 공격을 피하면서 점수를 획득하게 됩니다.
+## 1. 프로젝트 소개
 
----
+본 프로젝트는 고전 아케이드 슈팅 게임인 **Galaga** 스타일을 참고하여 제작한 2D 아케이드 슈팅 게임입니다.
 
-## 프로젝트 소개
+플레이어는 우주선을 조작하여 화면 위에서 등장하는 적 기체들을 공격하고, 적의 총알과 충돌을 피하면서 점수를 획득합니다.  
+게임은 wave 단위로 진행되며, 최종 목표는 **30 wave까지 도달하여 엔딩 화면을 보는 것**입니다.
 
-본 프로젝트는 **Galaga**의 핵심 플레이 감각을 바탕으로 한 2D 아케이드 슈팅 게임을 제작하는 것을 목표로 합니다.  
-단순히 원작을 모방하는 것이 아니라, 수업에서 배운 내용을 기반으로 게임 구조를 직접 설계하고 구현하는 프로젝트로 진행할 예정입니다.
-
-프로젝트의 중심은 화려한 확장보다는 **명확한 구조**, **안정적인 동작**, 그리고 **완성도 있는 기본 플레이 구현**에 있습니다.
+프로젝트에서는 단순한 슈팅 구조뿐만 아니라, wave 진행, enemy AI, tractor beam, capture 연출, bonus enemy, score / high score, game over / ending 화면 등을 구현하여 하나의 완성된 게임 흐름을 만드는 것을 목표로 했습니다.
 
 ---
 
-## 게임 장르
+## 2. 팀 정보
 
-- 2D Arcade Shooter
-- Fixed Shooter
-- Retro Style Shooting Game
+- **팀 이름:** Galaga
 
----
-
-## 프로젝트 목표
-
-- **Galaga 스타일의 핵심 게임 구조**를 구현한다.
-- 수업에서 배운 **게임 루프, 입력 처리, 오브젝트 관리, 렌더링 흐름**을 실제 프로젝트에 적용한다.
-- 복잡한 기능을 무리하게 추가하기보다, 필요한 기능을 분명하게 설계하고 안정적으로 동작하는 게임을 만드는 것을 목표로 한다.
+| 학번 | 이름 |
+| :--- | :--- |
+| 12230350 | Pak Denis |
+| 12215560 | NURMAISARAH BINTI AZAHAR |
+| 12211608 | 박상하 |
 
 ---
 
-## 핵심 플레이
+## 3. 개발 환경
 
-- 플레이어는 화면 하단에서 좌우로 이동하며 적을 공격합니다.
-- 적은 일정한 패턴으로 이동하거나 플레이어를 향해 공격합니다.
-- 플레이어는 적과 적의 공격을 피하면서 생존해야 합니다.
-- 적을 제거하면 점수를 획득합니다.
-- 플레이어의 목숨이 모두 소진되면 게임이 종료됩니다.
-
----
-
-## 구현 방향
-
-본 프로젝트는 원작의 분위기와 핵심 플레이를 참고하되, 현재 팀 프로젝트 범위에 맞추어 **기본 시스템을 우선적으로 구현**하는 방향으로 진행합니다.
-
-우선적으로 구현할 요소는 다음과 같습니다.
-
-- 플레이어 이동
-- 발사 기능
-- 적 생성 및 이동 패턴
-- 충돌 판정
-- 점수 시스템
-- 생명 시스템
-- 게임 오버 및 재시작
-
-이후 여유가 있을 경우, 적 패턴 확장이나 추가 기능을 단계적으로 보완할 예정입니다.
+- **Language:** C++
+- **Graphics API:** DirectX 11
+- **IDE:** Visual Studio
+- **Version Control:** Git / GitHub
+- **Platform:** Windows
 
 ---
 
-## 개발 환경
+## 4. 게임 조작 방법
 
-본 프로젝트는 교수님의 강의 자료 및 예제를 바탕으로 하며,  
-**Win32**와 **DirectX 11** 환경에서 구현하는 것을 전제로 합니다.
+| 기능 | 키 |
+| :--- | :--- |
+| 이동 | `← / →` 또는 `A / D` |
+| 공격 | `Space Bar` |
+| 일시정지 | `P` |
+| 재시작 | `R` |
+| 종료 | `ESC` |
+| 30 wave 테스트 | `Z` |
+| Game Over 테스트 | `X` |
 
----
-
-## 조작 방식
-
-- **Left / Right Arrow** : 플레이어 이동
-- **Space Bar** : 발사
-- **ESC** : 게임 종료
-
----
-
-## 참고 게임
-
-- Galaga
-- Galaxian
-- Space Invaders
+`Z`와 `X` 키는 발표 및 테스트를 위한 debug shortcut입니다.
 
 ---
 
-## 팀원
+## 5. 게임 규칙
 
-- **Pak Denis**(박데니스) [12230350]
-- **NURMAISARAH BINTI AZAHAR**(세라) [12215560]
-- **박상하** [12211608]
+- 플레이어는 적 기체를 처치하여 점수를 획득합니다.
+- 적 기체의 타입에 따라 획득 점수가 다릅니다.
+- 플레이어는 기본적으로 3개의 생명(lives)을 가지고 시작합니다.
+- 적의 총알에 맞거나 적 기체와 충돌하면 생명이 1 감소합니다.
+- 모든 생명을 잃으면 Game Over 상태가 됩니다.
+- 각 wave의 모든 적을 처치하면 다음 wave로 넘어갑니다.
+- 30 wave의 모든 적을 처치하면 Ending 화면이 출력됩니다.
 
 ---
 
-## 향후 계획
+## 6. 주요 기능
 
-- 적 종류 및 이동 패턴 구체화
-- 점수 시스템 정리
-- 플레이어 목숨 시스템 구현
-- 게임 오버 / 재시작 조건 확정
-- 역할 분담 정리
-- 클래스 구조 및 개발 계획 문서화
+### 6.1 Player System
+
+- 플레이어 좌우 이동
+- Space Bar를 이용한 총알 발사
+- 발사 쿨타임 적용
+- 최대 총알 수 제한
+- 피격 시 생명 감소
+- 리스폰 후 일정 시간 무적 처리
+- 무적 상태 시 깜빡임 효과 적용
+
+---
+
+### 6.2 Enemy System
+
+적 기체는 타입과 상태에 따라 서로 다른 움직임과 역할을 가집니다.
+
+| Type | 설명 | 점수 |
+| :--- | :--- | :--- |
+| Type 1 | 기본 적 기체 | 100 |
+| Type 2 | 공격형 적 기체 | 200 |
+| Type 3 | 보스 기체 / Tractor Beam 사용 | 500 |
+| Type 4 | Bonus Star | 1000 또는 생명 회복 |
+
+Enemy는 내부적으로 상태 머신을 사용하여 다음과 같은 상태를 가집니다.
+
+- Idle
+- Diving
+- Looping
+- Beaming
+- Capturing
+- Returning
+
+---
+
+### 6.3 Tractor Beam & Capture
+
+Type 3 보스 기체는 특정 위치에서 tractor beam을 발사할 수 있습니다.
+
+- 빔은 아래로 퍼지는 형태의 시각 효과로 렌더링됩니다.
+- 빔의 길이와 너비에 맞춰 hitbox가 갱신됩니다.
+- 플레이어가 빔에 닿으면 capture 상태가 됩니다.
+- capture된 플레이어 기체는 보스 기체 옆에 뒤집힌 상태로 매달립니다.
+- 이미 기체를 납치한 Type 3는 추가로 두 번째 기체를 납치하지 않도록 처리했습니다.
+
+---
+
+### 6.4 Wave System
+
+- 게임은 wave 단위로 진행됩니다.
+- 각 wave마다 적 기체들이 배치됩니다.
+- 모든 적을 처치하면 wave clear 상태가 됩니다.
+- 10 wave 이후부터는 적의 속도와 공격 관련 수치가 점진적으로 증가합니다.
+- 30 wave 클리어 시 Ending 화면으로 전환됩니다.
+
+---
+
+### 6.5 Bonus Star
+
+Type 4 Bonus Star는 5 wave 단위로 등장하는 특별한 보너스 객체입니다.
+
+- 플레이어의 생명이 3개 미만일 경우, 일정 확률로 생명을 회복하거나 1000점을 획득합니다.
+- 생명이 이미 가득 차 있다면 1000점을 획득합니다.
+- 이를 통해 단순 점수 획득뿐만 아니라 생존과 관련된 보너스 요소를 추가했습니다.
+
+---
+
+### 6.6 Score & High Score
+
+- 적을 처치하면 score가 증가합니다.
+- Game Over 화면에서 `FINAL SCORE`와 `HIGH SCORE`가 표시됩니다.
+- Ending 화면에서도 `FINAL SCORE`와 `HIGH SCORE`가 표시됩니다.
+- `HighScore`는 프로그램 실행 중에만 유지되며, 별도의 파일 저장 기능은 포함하지 않았습니다.
+
+---
+
+### 6.7 UI / Visual System
+
+- 시작 화면
+- Game Over 화면
+- Ending 화면
+- Score 표시
+- Lives icon 표시
+- Wave Clear 표시
+- Background star scrolling
+- Screen shake effect
+- Floating text animation
+
+---
+
+## 7. 프로젝트 구조
+
+프로젝트는 다음과 같은 주요 클래스를 중심으로 구성되어 있습니다.
+
+| Class | 역할 |
+| :--- | :--- |
+| `Game` | 전체 게임 흐름 제어 |
+| `WindowContext` | 윈도우 생성 및 메시지 처리 |
+| `GraphicsContext` | DirectX 렌더링 처리 |
+| `Player` | 플레이어 이동 및 렌더링 |
+| `Enemy` | 적 기체 상태 및 AI 처리 |
+| `PlayerBulletSystem` | 플레이어 총알 관리 |
+| `EnemyBulletSystem` | 적 총알 관리 |
+| `Bullet` | 총알 데이터 및 이동 처리 |
+| `StartupScreen` | 시작 화면 처리 |
+
+---
+
+## 8. Object Component Map
+
+게임 내 오브젝트는 크게 다음과 같이 분류했습니다.
+
+### Ally
+
+- Player
+- Player Bullet
+
+### Enemy
+
+- Enemy Type 1 / Type 2
+- Enemy Type 3
+- Enemy Type 4 / Bonus Star
+- Enemy Bullet
+- Tractor Beam
+
+### Background
+
+- Star Background
+- Screen Shake
+
+### System / UI
+
+- Game Controller
+- HUD
+- Start UI
+- Game Over UI
+- Ending UI
+
+---
+
+## 9. 실행 방법
+
+1. `게임플레이` 폴더를 엽니다.
+2. `Galaga.exe` 파일을 실행합니다.
+3. 별도의 Visual Studio 실행 없이 게임을 플레이할 수 있습니다.
+
+실행 파일과 필요한 리소스 파일은 같은 폴더 안에 있어야 합니다.
+
+예시:
+
+```text
+게임플레이/
+├─ Galaga.exe
+├─ ship.png
+├─ enemy.png
+├─ enemy2.png
+├─ enemy3.png
+├─ bonus_star.png
+├─ numbers.png
+└─ font.png
+```
+--- 
+
+## 10. 개발 과정
+
+본 프로젝트는 GitHub를 이용하여 팀원들이 각자 맡은 기능을 구현하고, pull request와 merge를 통해 코드를 통합하는 방식으로 진행했습니다.
+
+초기에는 단순한 도형을 이용하여 player, enemy, bullet system을 먼저 구현했고, 이후 이미지 리소스, enemy logic, wave system, UI, score system, hitbox adjustment, ending effect 등을 단계적으로 추가했습니다.
+
+프로젝트 후반에는 새로운 기능을 무리하게 늘리기보다, 이미 구현된 기능들이 안정적으로 동작하도록 수정하고 발표 및 제출을 위한 문서와 실행 파일을 정리하는 데 집중했습니다.
