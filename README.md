@@ -23,7 +23,17 @@
 
 ---
 
-## 3. 개발 환경
+## 3. 역할 분담
+
+| 이름 | 학번 | 주요 담당 |
+| :--- | :--- | :--- |
+| Pak Denis | 12230350 | 프로젝트 기본 구조 설계, GitHub 관리, player / bullet / enemy 기본 구조, collision 및 hitbox, wave system, Type4 bonus star, lives icon 조정, final score / high score 표시, Game Over 및 Ending 점수 화면 정리 |
+| 박상하 | 12211608 | enemy logic, enemy movement, enemy attack pattern, score system 기본 구현, tractor beam / capture logic, window focus pause 처리, 30 wave ending 연출, bug fix, PPT 준비 |
+| NURMAISARAH BINTI AZAHAR | 12215560 | StartupScreen, font texture, Galaga title / start / exit UI, lives rendering, image resources, UI 수정, visual elements, background / screen 관련 작업, bug fix |
+
+---
+
+## 4. 개발 환경
 
 - **Language:** C++
 - **Graphics API:** DirectX 11
@@ -33,7 +43,7 @@
 
 ---
 
-## 4. 게임 조작 방법
+## 5. 게임 조작 방법
 
 | 기능 | 키 |
 | :--- | :--- |
@@ -49,7 +59,7 @@
 
 ---
 
-## 5. 게임 규칙
+## 6. 게임 규칙
 
 - 플레이어는 적 기체를 처치하여 점수를 획득합니다.
 - 적 기체의 타입에 따라 획득 점수가 다릅니다.
@@ -61,9 +71,9 @@
 
 ---
 
-## 6. 주요 기능
+## 7. 주요 기능
 
-### 6.1 Player System
+### 7.1 Player System
 
 - 플레이어 좌우 이동
 - Space Bar를 이용한 총알 발사
@@ -75,7 +85,7 @@
 
 ---
 
-### 6.2 Enemy System
+### 7.2 Enemy System
 
 적 기체는 타입과 상태에 따라 서로 다른 움직임과 역할을 가집니다.
 
@@ -97,7 +107,7 @@ Enemy는 내부적으로 상태 머신을 사용하여 다음과 같은 상태�
 
 ---
 
-### 6.3 Tractor Beam & Capture
+### 7.3 Tractor Beam & Capture
 
 Type 3 보스 기체는 특정 위치에서 tractor beam을 발사할 수 있습니다.
 
@@ -109,7 +119,7 @@ Type 3 보스 기체는 특정 위치에서 tractor beam을 발사할 수 있습
 
 ---
 
-### 6.4 Wave System
+### 7.4 Wave System
 
 - 게임은 wave 단위로 진행됩니다.
 - 각 wave마다 적 기체들이 배치됩니다.
@@ -119,7 +129,7 @@ Type 3 보스 기체는 특정 위치에서 tractor beam을 발사할 수 있습
 
 ---
 
-### 6.5 Bonus Star
+### 7.5 Bonus Star
 
 Type 4 Bonus Star는 5 wave 단위로 등장하는 특별한 보너스 객체입니다.
 
@@ -129,7 +139,7 @@ Type 4 Bonus Star는 5 wave 단위로 등장하는 특별한 보너스 객체입
 
 ---
 
-### 6.6 Score & High Score
+### 7.6 Score & High Score
 
 - 적을 처치하면 score가 증가합니다.
 - Game Over 화면에서 `FINAL SCORE`와 `HIGH SCORE`가 표시됩니다.
@@ -138,7 +148,7 @@ Type 4 Bonus Star는 5 wave 단위로 등장하는 특별한 보너스 객체입
 
 ---
 
-### 6.7 UI / Visual System
+### 7.7 UI / Visual System
 
 - 시작 화면
 - Game Over 화면
@@ -152,7 +162,7 @@ Type 4 Bonus Star는 5 wave 단위로 등장하는 특별한 보너스 객체입
 
 ---
 
-## 7. 프로젝트 구조
+## 8. 프로젝트 구조
 
 프로젝트는 다음과 같은 주요 클래스를 중심으로 구성되어 있습니다.
 
@@ -170,7 +180,7 @@ Type 4 Bonus Star는 5 wave 단위로 등장하는 특별한 보너스 객체입
 
 ---
 
-## 8. Object Component Map
+## 9. Object Component Map
 
 게임 내 오브젝트는 크게 다음과 같이 분류했습니다.
 
@@ -202,7 +212,7 @@ Type 4 Bonus Star는 5 wave 단위로 등장하는 특별한 보너스 객체입
 
 ---
 
-## 9. 실행 방법
+## 10. 실행 방법
 
 1. `게임플레이` 폴더를 엽니다.
 2. `Galaga.exe` 파일을 실행합니다.
@@ -223,9 +233,8 @@ Type 4 Bonus Star는 5 wave 단위로 등장하는 특별한 보너스 객체입
 ├─ numbers.png
 └─ font.png
 ```
---- 
 
-## 10. 개발 과정
+## 11. 개발 과정
 
 본 프로젝트는 GitHub를 이용하여 팀원들이 각자 맡은 기능을 구현하고, pull request와 merge를 통해 코드를 통합하는 방식으로 진행했습니다.
 
