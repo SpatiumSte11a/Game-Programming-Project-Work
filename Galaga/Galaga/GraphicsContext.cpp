@@ -220,7 +220,7 @@ float4 PSMain(PS_INPUT i) : SV_TARGET
     float4 t = fontTex.Sample(samp, i.uv);
     
     float brightness = (t.r + t.g + t.b) / 3.0f;
-    if (brightness < 0.05f) discard;
+    if (brightness < 0.05f || t.a < 0.1f) discard;
 
     return float4(t.rgb, 1.0f);
 }

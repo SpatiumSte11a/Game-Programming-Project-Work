@@ -2,7 +2,7 @@
 #include <windows.h>
 #include <cmath>
 
-const float StartupScreen::CountdownDuration = 2.0f;
+const float StartupScreen::CountdownDuration =3.0f;
 
 void StartupScreen::Initialize()
 {
@@ -77,11 +77,9 @@ void StartupScreen::Render(GraphicsContext& graphics, float globalTime)
 
         if (sinf(globalTime * 6.0f) > 0.0f)
         {
-            if (seconds == 5) graphics.DrawText("5", -0.04f, -0.20f, 2.0f);
-            if (seconds == 4) graphics.DrawText("4", -0.04f, -0.20f, 2.0f);
-            if (seconds == 3) graphics.DrawText("3", -0.04f, -0.20f, 2.0f);
-            if (seconds == 2) graphics.DrawText("2", -0.04f, -0.20f, 2.0f);
-            if (seconds == 1) graphics.DrawText("1", -0.04f, -0.20f, 2.0f);
+            if (seconds == 3) graphics.DrawNumbers("3", -0.04f, -0.20f, 2.0f);
+            if (seconds == 2) graphics.DrawNumbers("2", -0.04f, -0.20f, 2.0f);
+            if (seconds == 1) graphics.DrawNumbers("1", -0.04f, -0.20f, 2.0f);
         }
 
         if (sinf(globalTime * 3.14f) > 0.0f)
