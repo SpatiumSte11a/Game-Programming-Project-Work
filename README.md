@@ -9,6 +9,8 @@
 
 프로젝트에서는 단순한 슈팅 구조뿐만 아니라, wave 진행, enemy AI, tractor beam, capture 연출, bonus enemy, score / high score, game over / ending 화면 등을 구현하여 하나의 완성된 게임 흐름을 만드는 것을 목표로 했습니다.
 
+<img width="475" height="636" alt="image" src="https://github.com/user-attachments/assets/4114f409-fe43-4292-8573-f7283e556bdd" />
+
 ---
 
 ## 2. 팀 정보
